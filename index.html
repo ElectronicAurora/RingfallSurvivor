@@ -344,10 +344,10 @@ const CFG = {
       r: 90, speed: 80, warning: 1.2, contactPct: 0.12, xp: 0, color: "#d8c47f",
       ai: "boss", warnText: "胎渊",
       loop: 2.6,
-      skills: [{ kind: "gap", windup: 0.8, cd: 6.0, n: 24, leave: 3, speed: 275, r: 18, pct: 0.12, hue: "#f2d98d" }],   // v4.20 他直接数弹速 ×1.25（220→275）。他给的 P1 档：与 P2 同一手几何，只把缺口留宽一格（留 3 ⇒ 空弧 @150 实测 121.1px，判据【弹隙】线 81.6 的 1.48 倍）。空表那条老口径随之失效，但 def.skills 非空仍然让 track 留在技能通道里，不掉进 else 那支的撼地者默认 bossPickSkill
-      skills2: [{ kind: "gap", windup: 0.8, cd: 5.0, n: 24, leave: 2, speed: 275, r: 18, pct: 0.12, hue: "#f2d98d", pull: 150, pullR: 1200 }],   // v4.20 ×1.25（220→275）。第 86 项甲：leave 只按奇数取（跳过条件 dd*2 < leave 而 dd 是整数格 ⇒ 被跳过的格恒为奇数），所以"留 2"实发是留 1 格 ⇒ 缺口边界两发相隔 2 格 ＝ 30.0° ⇒ 空弧 @150 只有 42.5px（线 81.6，@224.6 才够）。pull／pullR 是他给的第二处改动：前摇那 0.8 秒把玩家以 150px/s 拽向本体，1200px 之外不生效，P1 那一手没带 pull 所以不吸
+      skills: [{ kind: "gap", windup: 0.8, cd: 4.0, n: 36, leave: 0, speed: 450, r: 18, pct: 0.15, hue: "#f2d98d", burst: 2, burstGap: 0.3 }],   // v4.23 他直接数：不留缺口／36发／0.3s连发两次／弹速450／伤害15%／CD减1/3（6→4）
+      skills2: [{ kind: "gap", windup: 0.8, cd: 10/3, n: 36, leave: 0, speed: 450, r: 18, pct: 0.15, hue: "#f2d98d", burst: 2, burstGap: 0.3, pull: 150, pullR: 1200 }],   // v4.23 同P1＋CD 5→10/3；pull不变
       halfWarn: 0.8, halfKind: "gap", halfText: "胎渊 · 星隙",
-      vortexN: 2, vortexR: 230, vortexPull: 120, vortexLife: 10, vortexP1: true,
+      vortexN: 2, vortexR: 280, vortexPull: 120, vortexLife: 10, vortexP1: true, vortexDot: 0.04,   // v4.23 他直接数：半径230→280、内部持续伤害4%/s、位置移到场内
       summon: { key: "stardust", n: 3 },           // P1 起手一批 3 只、不补召（换算器 E 段：补召会让"清层"在任何 CD 上都劣于"别管它"）
       shieldPct: 0.40,                             // v4.21 他直接数：每只盾量翻倍 ⇒ 比例档 20%→40%：满员＝6120，每层＝6120／3＝2040（第 78 项比例档）
       coreDeg: 120 * DEG, coreMult: 1.3,
@@ -364,15 +364,15 @@ const CFG = {
       skills: [
         // 第 98 项乙：n24 留 6 ⇒ 判据【夹逼】下界 125.3 ＜ updateBoss 那句写死的 150 ⇒ BOSS 天然站位处就有解
         // （@150 缝半宽 27.7° vs 梁禁半角 20.3°，余 7.4°）；@150 空弧 435.2px＝判据【弹隙】线 81.6 的 5.3 倍
-        { kind: "gap", windup: 0.8, cd: 6.0, n: 24, leave: 6, speed: 275, r: 18, pct: 0.12, hue: "#cfe9ff" },   // v4.20 他直接数弹速 ×1.25（220→275）
+        { kind: "gap", windup: 0.8, cd: 6.0, n: 36, leave: 0, speed: 450, r: 18, pct: 0.15, hue: "#cfe9ff", burst: 2, burstGap: 0.3 },   // v4.23 他直接数：不留缺口／36发／0.3s连发两次／弹速450／伤害15%
         { kind: "charge", windup: 0.8, cd: 5.0 },
-        { kind: "beam", windup: 0.6, cd: 7.0, n: 1, spin: 36 * DEG, w: 26, len: 900, pct: 0.10, hue: "#cfe9ff", life: 8.0 },   // v4.20 他直接数：末环激光 24→36°/s、伤害 5%→10%（环之守望父子那对 24／0.05 是第 96 项单独给的数，不在本次范围）
+        { kind: "beam", windup: 0.6, cd: 7.0, n: 2, spin: 45 * DEG, w: 26, len: 900, pct: 0.10, hue: "#cfe9ff", life: 8.0 },   // v4.23 他直接数：改两束、45°/s正反转（原 n1 spin36）
       ],
       // P3＝弹幕加速＋环缩＋梁仍在场（判据【夹逼】要求缝与梁同场）。v4.20 他直接数弹速 ×1.25 ⇒ speed 325（原 260＝撼地者环弹同档，×1.25 后不再同档）；
       // cd 5.0＝胎渊 P2 同档不变；n／leave／r／pct 一律不动 ⇒ 缝宽与单发伤害逐字不变。梁随 P1 同改 36°/s／10%。
       skills2: [
-        { kind: "gap", windup: 0.8, cd: 5.0, n: 24, leave: 6, speed: 325, r: 18, pct: 0.12, hue: "#cfe9ff" },   // v4.20 ×1.25（260→325）
-        { kind: "beam", windup: 0.6, cd: 7.0, n: 1, spin: 36 * DEG, w: 26, len: 900, pct: 0.10, hue: "#cfe9ff", life: 8.0 },   // v4.20 同 P1
+        { kind: "gap", windup: 0.8, cd: 5.0, n: 36, leave: 0, speed: 500, r: 18, pct: 0.15, hue: "#cfe9ff", burst: 2, burstGap: 0.3 },   // v4.23 同P1＋末环P3加速到500
+        { kind: "beam", windup: 0.6, cd: 7.0, n: 2, spin: 45 * DEG, w: 26, len: 900, pct: 0.10, hue: "#cfe9ff", life: 8.0 },   // v4.23 同 P1
       ],
       halfWarn: 0.8, halfKind: "shrink", halfText: "末环 · 终焉收缩",
       summon: { key: "watcherWeak", n: 4 },          // P1 起手一批 4 只、不补召；4 只刚好顶满 MAX_SUMMON_PER_OWNER
@@ -1768,7 +1768,7 @@ function initEnemy(e, def, x, y) {
   e.summonCd = 0;                                                     // 第 81 项乙：首召从 0 开始，所以每只召星童在 4.24 秒 TTK 内只来得及召出一批
   e.cloaked = false; e.cloakFade = 0;
   e.cloakT = def.cloak ? 0.5 : 0;                       // 第 61 项甲：出生首段 0.5 秒强制可读，之后才进 8 秒周期
-  e.halfDone = false; e.tele = null; e.teleT = 0;
+  e.halfDone = false; e.tele = null; e.teleT = 0; e.gapBurst = false;
   e.p1Done = false;                                      // 批次4b-3 第 78 项：BOSS 的 P1 起手一批（撑盾召唤物）只发一次
   e.skillCd = null; e.skills = null; e.vortex = null; e.volleyT = null;   // e.skills 只给刹那 P2 用，池化对象必须清空
   e.beams = null; e.beamT = 0; e.beamLife = 0; e.beamCd = 0;   // 第 103 项甲：梁是挂在实体上的 FX 记录，不是弹丸 ⇒ 随宿主死亡消失，不进对象池
@@ -3060,6 +3060,10 @@ function updateBoss(e, wdt) {
       e.teleT -= wdt;
       if (e.teleT <= 0) { spawnVortices(e); e.tele = null; e.state = "track"; e.t = def.loop; }
       break;
+    case "gapBurst":                                       // v4.23：星隙连发第二弹
+      e.t -= wdt;
+      if (e.t <= 0) { e.tele = { s: e.gapBurstS, dir: e.gapBurstDir }; bossGap(e); }
+      break;
     case "recover":
       e.t -= wdt;
       if (e.t <= 0) { e.tele = null; e.state = "track"; e.t = def.loop; }
@@ -3166,6 +3170,14 @@ function bossGap(e) {
     if (dd * 2 < s.leave) continue;                        // 落在缺口里 ⇒ 这一格不发
     spawnShot(e.x, e.y, i * dA, s.speed, s.r, s.pct, s.hue, false);
   }
+  if ((s.burst || 1) > 1 && !e.gapBurst) {                 // v4.23：0.3s 内连发两次
+    e.gapBurst = true;
+    e.gapBurstS = s; e.gapBurstDir = e.tele.dir;
+    e.tele = null;
+    e.state = "gapBurst"; e.t = s.burstGap || 0.3;
+    return;
+  }
+  e.gapBurst = false;
   e.tele = null;
   e.state = "recover"; e.t = 0.7;
 }
@@ -3186,20 +3198,25 @@ function spawnVortices(e) {
   const def = e.def;
   e.vortex = [];
   for (let i = 0; i < def.vortexN; i++) {
-    const p = edgePoint(i / def.vortexN + 0.25, 150);      // 贴着边缘生成，拽的是正在绕场走位的人
-    e.vortex.push({ x: p.x, y: p.y, t: def.vortexLife, full: def.vortexLife });
+    const x = (i % 2 === 0 ? 1 : -1) * 300, y = (i % 2 === 0 ? -1 : 1) * 150;   // v4.23：场内对角错开（原贴边缘）
+    e.vortex.push({ x, y, t: def.vortexLife, full: def.vortexLife });
   }
 }
 
 function updateVortices(e, wdt) {
   if (!e.vortex) return;
-  let live = 0;
+  let live = 0, inside = false;
   for (const v of e.vortex) {
     if (v.t <= 0) continue;
     v.t -= wdt; live++;
     pullToward(player, v.x, v.y, e.def.vortexPull, wdt, e.def.vortexR);
+    if (dist(player.x, player.y, v.x, v.y) < e.def.vortexR) inside = true;
   }
   if (!live) { e.vortex = null; return; }
+  if (inside && e.def.vortexDot) {
+    player.hp -= CFG.player.maxHp * e.def.vortexDot * wdt;
+    if (player.hp <= 0) { player.hp = 0; G.mode = "dead"; G.timeScale = 1; G.pick = null; sweepOrbs(); }
+  }
   clampInside(player, player.r);                           // 牵引把人往唇边拽，但玩家永不坠崖（第八章 1b 硬规则）
 }
 
