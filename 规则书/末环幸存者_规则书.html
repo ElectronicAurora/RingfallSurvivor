@@ -1,0 +1,2272 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>末环幸存者 · 规则书</title>
+<style>
+:root{
+  --bg:#080b12; --bg2:#0c111c; --panel:#111828; --line:#1e2a40;
+  --ink:#c3d0e2; --ink-dim:#7e8fa8; --ink-bright:#eaf2fc;
+  --cyan:#5fd6e8; --gold:#ffd166; --red:#ff7a6b; --green:#6fe3a0; --violet:#a98bff;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:system-ui,-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  font-size:15px; line-height:1.85; letter-spacing:.01em;
+}
+.wrap{display:flex; max-width:1500px; margin:0 auto; align-items:flex-start}
+
+/* ---------- 侧栏目录 ---------- */
+nav{
+  position:sticky; top:0; width:246px; flex:0 0 246px; height:100vh; overflow-y:auto;
+  padding:34px 18px 60px 26px; border-right:1px solid var(--line);
+  background:linear-gradient(180deg,rgba(10,15,24,.9),rgba(8,11,18,1));
+}
+nav .nav-t{font-size:11px; letter-spacing:.18em; color:var(--ink-dim); margin-bottom:14px}
+nav ul{list-style:none; margin:0; padding:0}
+nav li{margin:0}
+nav a{
+  display:block; padding:5px 10px; margin:1px 0; border-radius:6px;
+  color:var(--ink-dim); text-decoration:none; font-size:13px; line-height:1.5;
+  border-left:2px solid transparent; transition:.15s;
+}
+nav a:hover{color:var(--cyan); background:rgba(95,214,232,.07); border-left-color:rgba(95,214,232,.5)}
+nav .toctitle{display:none}
+
+/* ---------- 正文 ---------- */
+main{flex:1 1 auto; min-width:0; padding:0 46px 120px 46px; max-width:1100px}
+
+header.top{
+  padding:64px 0 34px; border-bottom:1px solid var(--line); margin-bottom:44px;
+  position:relative;
+}
+header.top .eyebrow{
+  font-size:11px; letter-spacing:.34em; color:var(--cyan); margin-bottom:18px; opacity:.85;
+}
+header.top h1{
+  font-size:44px; line-height:1.25; margin:0 0 14px; color:var(--ink-bright);
+  font-weight:800; letter-spacing:.02em;
+}
+header.top .sub{color:var(--ink-dim); font-size:13.5px; line-height:1.9}
+header.top .sub b{color:var(--ink); font-weight:600}
+header.top .rule{
+  position:absolute; left:0; bottom:-1px; width:132px; height:2px;
+  background:linear-gradient(90deg,var(--cyan),transparent);
+}
+
+hr + h2{margin-top:30px}
+h2{
+  font-size:23px; color:var(--ink-bright); font-weight:700; margin:52px 0 22px;
+  padding-bottom:12px; border-bottom:1px solid var(--line); letter-spacing:.02em;
+  scroll-margin-top:20px;
+}
+h2::before{
+  content:""; display:inline-block; width:6px; height:16px; margin-right:12px;
+  background:var(--cyan); border-radius:2px; vertical-align:-2px; opacity:.85;
+}
+h3{
+  font-size:17px; color:#dce7f6; font-weight:700; margin:38px 0 14px;
+  letter-spacing:.02em;
+}
+h3::before{content:"·"; color:var(--cyan); margin-right:9px; font-weight:800}
+
+p{margin:0 0 15px}
+strong{color:#eef4fd; font-weight:700}
+em{color:var(--gold); font-style:normal}
+a{color:var(--cyan)}
+ul,ol{margin:0 0 16px; padding-left:22px}
+li{margin:5px 0}
+li::marker{color:var(--ink-dim)}
+hr{border:0; border-top:1px solid var(--line); margin:44px 0}
+
+/* ---------- 表格 ---------- */
+.tw{overflow-x:auto; margin:18px 0 26px; border:1px solid var(--line); border-radius:10px}
+table{border-collapse:collapse; width:100%; font-size:13.5px; background:var(--panel)}
+th,td{padding:9px 13px; text-align:left; border-bottom:1px solid #182238; vertical-align:top}
+thead th{
+  background:#0e1626; color:#cfe0f2; font-weight:700; font-size:12.5px;
+  letter-spacing:.04em; white-space:nowrap; border-bottom:1px solid #223049;
+}
+tbody tr:nth-child(even) td{background:rgba(255,255,255,.014)}
+tbody tr:hover td{background:rgba(95,214,232,.045)}
+tbody tr:last-child td{border-bottom:0}
+table.two td:first-child,table.two th:first-child{width:1%;white-space:nowrap}
+table.nw td:first-child{white-space:nowrap}
+table.mob td:nth-child(2),table.mob th:nth-child(2),
+table.mob td:nth-child(5),table.mob th:nth-child(5),
+table.mob td:nth-child(6),table.mob th:nth-child(6){white-space:nowrap}
+/* BOSS 技能表：伤害与 CD 两列禁止换行（否则「6.0 s」被折成两行） */
+table.skl td:nth-last-child(1),table.skl th:nth-last-child(1),
+table.skl td:nth-last-child(2),table.skl th:nth-last-child(2){white-space:nowrap}
+table.wpn{font-size:8pt}
+table.wpn td:nth-child(n+2):not(:last-child),table.wpn th:nth-child(n+2):not(:last-child){white-space:nowrap}
+table.wpn td:first-child{white-space:nowrap}
+table.wpn td:last-child{font-size:7.5pt}
+td code,th code,li code,p code{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:12px;
+  background:rgba(95,214,232,.10); color:#9fe6f2; padding:1.5px 6px; border-radius:4px;
+  white-space:nowrap;
+}
+
+/* ---------- 代码块（状态机图） ---------- */
+pre{
+  background:#070b13; border:1px solid var(--line); border-radius:10px;
+  padding:18px 20px; overflow-x:auto; margin:18px 0 26px;
+}
+pre code{
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  font-size:12.5px; line-height:1.75; color:#9fb4cd; background:none; padding:0; white-space:pre;
+}
+
+/* ---------- 引用 ---------- */
+blockquote{
+  margin:20px 0; padding:14px 18px; border-left:2px solid var(--cyan);
+  background:rgba(95,214,232,.05); color:#a9bdd4; border-radius:0 8px 8px 0;
+}
+blockquote p:last-child{margin:0}
+
+@media (max-width:1080px){
+  nav{display:none}
+  main{padding:0 22px 90px}
+  header.top h1{font-size:32px}
+  h2{font-size:20px}
+}
+@media print{
+  body{background:#fff; color:#1a1f28; font-size:10.5pt}
+  strong{color:#0d131c}
+  em{color:#7a4b00}
+  a{color:#134e5e}
+  code{background:#e9eef5 !important; color:#0e4a58 !important}
+  header.top .eyebrow{color:#0b6b7a}
+  header.top .rule{background:linear-gradient(90deg,#0b6b7a,transparent)}
+  h2::before{background:#0b6b7a}
+  h3::before{color:#0b6b7a}
+  th,td{padding:6px 9px}
+  blockquote{border-left-color:#0b6b7a; background:#f2f7fa; color:#26313f}
+  nav{display:none}
+  main{padding:0; max-width:none}
+  header.top h1{color:#0a0f18}
+  h2{color:#0a0f18; border-color:#ccd3de; page-break-after:avoid}
+  h3{color:#1a1f28; page-break-after:avoid}
+  table{background:#fff; font-size:9pt}
+  tr{page-break-inside:avoid}
+  table.skl{page-break-inside:avoid}
+  thead{display:table-header-group}
+  thead th{background:#eef1f6; color:#1a1f28}
+  tbody tr:nth-child(even) td{background:#fafbfd}
+  th,td{border-color:#d8dee8}
+  pre{background:#f5f7fa; border-color:#d8dee8}
+  pre code{color:#2a3140}
+  .tw{border-color:#d8dee8}
+  a{color:#1a1f28; text-decoration:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<nav>
+  <div class="nav-t">目 录</div>
+  <div class="toc">
+<ul>
+<li><a href="#_1">一页速览</a></li>
+<li><a href="#_2">一、操作</a></li>
+<li><a href="#_3">二、主角</a></li>
+<li><a href="#_4">三、武器</a></li>
+<li><a href="#_5">四、敌人通则</a></li>
+<li><a href="#_6">五、关卡与波次</a></li>
+<li><a href="#_7">六、怪物图鉴</a></li>
+<li><a href="#boss">七、BOSS</a></li>
+<li><a href="#_8">八、成长</a></li>
+<li><a href="#_9">九、遗器</a></li>
+<li><a href="#_10">十、流程与状态机</a></li>
+<li><a href="#_11">十一、平衡口径</a></li>
+<li><a href="#a">附录 A · 参数总表</a></li>
+<li><a href="#b">附录 B · 代码索引</a></li>
+</ul>
+</div>
+
+</nav>
+<main>
+<header class="top">
+  <div class="eyebrow">END RING SURVIVOR / RULEBOOK</div>
+  <h1>末环幸存者 · 规则书</h1>
+  <div class="sub">
+    对应 <b>index.html v4.23</b>（单文件，35 张 webp 内联）　·　全部数值取自代码常量，非设计稿<br>
+    文中「格」＝ 100 px　·　擂台 1600 × 900　·　五关 ×（3 波 + BOSS）
+  </div>
+  <div class="rule"></div>
+</header>
+<h2 id="_1">一页速览</h2>
+<div class="tw"><table class="two nw">
+<thead>
+<tr>
+<th>项</th>
+<th>值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>类型</td>
+<td>俯视角双摇杆割草 Roguelite，横屏，纯手瞄，无翻滚</td>
+</tr>
+<tr>
+<td>单局结构</td>
+<td>5 关 ×（3 波小怪 + 1 BOSS）</td>
+</tr>
+<tr>
+<td>擂台</td>
+<td>1600 × 900 圆角矩形（圆角 180），浮空，边缘即深渊</td>
+</tr>
+<tr>
+<td>主角</td>
+<td>HP 1000 ／ 攻击 100 ／ 移速 300 px/s ／ 半径 32 ／ 无敌帧 0.6 s</td>
+</tr>
+<tr>
+<td>成长</td>
+<td>击杀掉经验宝珠 → 升级 → 刻印三选一（24 项）</td>
+</tr>
+<tr>
+<td>大招</td>
+<td>遗器，击败 BOSS 后三选一，全局仅持有 1 件</td>
+</tr>
+<tr>
+<td>目标时长</td>
+<td>13 ~ 20 分钟</td>
+</tr>
+<tr>
+<td>结束条件</td>
+<td>HP 归零（阵亡）／ 第 5 关 BOSS 死亡（通关）</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="_2">一、操作</h2>
+<h3 id="11">1.1 触屏</h3>
+<div class="tw"><table class="nw">
+<thead>
+<tr>
+<th>动作</th>
+<th>操作</th>
+<th>细节</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>移动</td>
+<td>左半屏任意处按下拖动</td>
+<td>摇杆行程 62 px，圆心＝按下点，不是固定摇杆底座</td>
+</tr>
+<tr>
+<td>瞄准</td>
+<td>右半屏按下拖动</td>
+<td>拖拽不足 10 px 时保持上一次朝向</td>
+</tr>
+<tr>
+<td>普攻</td>
+<td>松手</td>
+<td><strong>射速由武器 CD 决定，与点击频率无关</strong>；按住拖动只改朝向</td>
+</tr>
+<tr>
+<td>普攻（快捷）</td>
+<td>右下攻击键（r 46）</td>
+<td>判定圈 ×1.55，等效于在右半屏起手</td>
+</tr>
+<tr>
+<td>主动刻印</td>
+<td>攻击键周围环绕的 2~3 个键（r 34）</td>
+<td>判定圈 ×1.4，点即施放</td>
+</tr>
+<tr>
+<td>遗器（大招）</td>
+<td>右上下方遗器键</td>
+<td>按下不出手，<strong>松手才施放</strong>；拖出 10 px 决定方向，点按沿用当前朝向</td>
+</tr>
+<tr>
+<td>暂停</td>
+<td>右上按钮</td>
+<td>面板二选：继续 / 返回标题</td>
+</tr>
+<tr>
+<td>竖屏</td>
+<td>—</td>
+<td>画面冻结，只显示「请横屏握持」</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="12">1.2 桌面（调试用）</h3>
+<div class="tw"><table class="two nw">
+<thead>
+<tr>
+<th>动作</th>
+<th>键</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>移动</td>
+<td><code>WASD</code> / 方向键</td>
+</tr>
+<tr>
+<td>瞄准</td>
+<td>鼠标位置（实时跟随）</td>
+</tr>
+<tr>
+<td>普攻</td>
+<td>鼠标左键松开 / <code>空格</code></td>
+</tr>
+<tr>
+<td>主动刻印</td>
+<td><code>1</code> <code>2</code> <code>3</code> 或 <code>Q</code> <code>E</code> <code>F</code></td>
+</tr>
+<tr>
+<td>遗器</td>
+<td><code>X</code></td>
+</tr>
+<tr>
+<td>暂停</td>
+<td><code>Esc</code></td>
+</tr>
+<tr>
+<td>重开</td>
+<td><code>R</code></td>
+</tr>
+<tr>
+<td>三选一</td>
+<td><code>1</code> <code>2</code> <code>3</code> <code>4</code> 直接选（武器四选一时第 4 项是光炮）</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="13">1.3 两条设计约束</h3>
+<ul>
+<li><strong>瞄准与移动必须分属两只手</strong>：左半屏只认移动指针，右半屏只认瞄准指针，两个 pointerId 各自独立，互不抢占。</li>
+<li><strong>普攻是「松手事件」而不是「持续按住」</strong>：所以玩家可以在拖动瞄准的过程中蓄着不发，松手瞬间按当前朝向打出一发，随后由 <code>atkCd</code> 接管节奏。</li>
+</ul>
+<hr />
+<h2 id="_3">二、主角</h2>
+<h3 id="21">2.1 基础属性</h3>
+<div class="tw"><table class="nw">
+<thead>
+<tr>
+<th>属性</th>
+<th>值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>最大生命</td>
+<td>1000</td>
+<td>所有敌方伤害以「最大生命的百分比」定义，见 2.3</td>
+</tr>
+<tr>
+<td>攻击力</td>
+<td>100</td>
+<td>1 级基准，武器与刻印的伤害都乘在它上面</td>
+</tr>
+<tr>
+<td>移动速度</td>
+<td>300 px/s</td>
+<td>全场最快单位之一（只有影刺客 170、复制体 150 接近，BOSS 最高 110）</td>
+</tr>
+<tr>
+<td>半径</td>
+<td>32 px</td>
+<td>受击判定；敌方子弹对玩家用 <code>r × 0.85</code> ＝ 27.2 px，比视觉略小</td>
+</tr>
+<tr>
+<td>无敌帧</td>
+<td>0.6 s</td>
+<td>受击后触发；也是光束类伤害的结算节拍</td>
+</tr>
+<tr>
+<td>经验吸附</td>
+<td>110 px</td>
+<td>③丰穰 ×2.5 → 275 px</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="22-attackpower">2.2 攻击力乘区（<code>attackPower()</code>）</h3>
+<p>按顺序连乘，取整只发生在残锋的层数上：</p>
+<div class="tw"><table class="nw">
+<thead>
+<tr>
+<th>来源</th>
+<th>系数</th>
+<th>条件</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>基准</td>
+<td>100</td>
+<td>—</td>
+</tr>
+<tr>
+<td>⑤残锋</td>
+<td>×(1 + ⌊损失×10⌋ × 8%)</td>
+<td>每损失 10% 生命 +8%，最多算到损失 80%；HP &lt; 20% 时锁定满档</td>
+</tr>
+<tr>
+<td>⑫尘梦</td>
+<td>×(1 + 尘层 × 1%)</td>
+<td>尘层上限 20</td>
+</tr>
+<tr>
+<td>㉔完璧</td>
+<td>×1.15</td>
+<td>HP ≥ 95%</td>
+</tr>
+<tr>
+<td>吸能水母</td>
+<td>×(1 − 层数 × 10%)</td>
+<td>层数 ≤ 3，见 4.6</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="23-damageplayer">2.3 受伤结算顺序（<code>damagePlayer</code>）</h3>
+<pre><code>① 无敌帧 &gt; 0            → 直接丢弃
+② 无咎格挡中            → 判定弹反，本次伤害归零
+③ 凌波闪避（每层 20%）  → 成功则闪避，并给 2 秒 +30% 移速
+④ 减伤乘区连乘（下限 0.2）
+⑤ 护盾吸收（ward / shield 取较大者，先扣大的）
+⑥ 扣血；尘梦 −3 层
+⑦ 淬刃：1.2 秒 −15% 减伤 + 对 200 内敌人 50% 攻击反伤（内置 2 秒）
+</code></pre>
+<p>减伤乘区一览：</p>
+<div class="tw"><table class="nw">
+<thead>
+<tr>
+<th>来源</th>
+<th>系数</th>
+<th>条件</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>⑫尘梦</td>
+<td>×(1 − 尘层 × 1%)</td>
+<td>上限 20%</td>
+</tr>
+<tr>
+<td>㉑淬刃</td>
+<td>×0.85</td>
+<td>受击后 1.2 s</td>
+</tr>
+<tr>
+<td>㉓垣垒</td>
+<td>×0.90</td>
+<td>身上有盾（ward 或 shield）</td>
+</tr>
+<tr>
+<td>㉔完璧</td>
+<td>×0.90</td>
+<td>HP ≥ 95%</td>
+</tr>
+<tr>
+<td><strong>地板</strong></td>
+<td><strong>0.20</strong></td>
+<td>无论叠多少，最多减到 20%</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="24">2.4 敌方伤害的面值</h3>
+<p>所有敌人伤害都以「最大生命的百分比」写表，实际扣血 ＝ 1000 × 百分比 × 减伤链。</p>
+<div class="tw"><table class="two nw">
+<thead>
+<tr>
+<th>类型</th>
+<th>典型面值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>小怪接触</td>
+<td>5% ~ 15%（多数 8%）</td>
+</tr>
+<tr>
+<td>小怪弹幕</td>
+<td>5% ~ 6%</td>
+</tr>
+<tr>
+<td>精英接触</td>
+<td>6% ~ 10%</td>
+</tr>
+<tr>
+<td>精英技能</td>
+<td>10% ~ 12%</td>
+</tr>
+<tr>
+<td>BOSS 接触</td>
+<td>10% ~ 12%</td>
+</tr>
+<tr>
+<td>BOSS 技能</td>
+<td>6% ~ 25%</td>
+</tr>
+</tbody>
+</table></div>
+<p>接触伤害每 0.8 秒最多结算一次（<code>e.touchCd</code>）。</p>
+<hr />
+<h2 id="_4">三、武器</h2>
+<p>开局四选一，全局不换。四把的定位差异是<strong>距离</strong>，不是面板强度。</p>
+<div class="tw"><table class="skl wpn">
+<thead>
+<tr>
+<th>武器</th>
+<th>CD</th>
+<th>单发伤害</th>
+<th>弹数</th>
+<th>弹速</th>
+<th>射程</th>
+<th>穿透</th>
+<th>击退</th>
+<th>木桩 DPS</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>环刃·残响 <code>ring</code></td>
+<td>0.50 s</td>
+<td>25</td>
+<td>1（去＋回）</td>
+<td>700</td>
+<td>450（4.5 格）</td>
+<td>3</td>
+<td>0.30</td>
+<td><strong>100</strong></td>
+</tr>
+<tr>
+<td>弦鸣手弩 <code>cross</code></td>
+<td>0.40 s</td>
+<td>50</td>
+<td>1</td>
+<td>1200</td>
+<td>800（8 格）</td>
+<td>2</td>
+<td>0.22</td>
+<td><strong>125</strong></td>
+</tr>
+<tr>
+<td>碎星霰铳 <code>scatter</code></td>
+<td>0.40 s</td>
+<td>12 × 5</td>
+<td>5</td>
+<td>800</td>
+<td>380（3.8 格）</td>
+<td>0</td>
+<td>0.12</td>
+<td><strong>150</strong>（5 弹全中）</td>
+</tr>
+<tr>
+<td>裂空光炮 <code>cannon</code></td>
+<td>0.90 s</td>
+<td>60 ＋ 40（爆炸）</td>
+<td>1</td>
+<td>600</td>
+<td>600（6 格）</td>
+<td>0</td>
+<td>0.35</td>
+<td><strong>111</strong>（直击＋爆炸）</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="31">3.1 环刃</h3>
+<ul>
+<li>去程直线飞行 450 px 或撞边界，随即折返；<strong>回程速度不变、方向直指玩家当前位置</strong>（追踪），回到手上时消失。</li>
+<li>去程与回程共用同一个「已命中列表」，但折返时该列表清空 → 同一只怪可以被打两次，这就是 DPS 100 ＝ 25 × 2 ÷ 0.5 的来源。</li>
+<li>同时最多 3 把在去程；第 4 次开火时<strong>不吞输入</strong>，最老那把立即折返。</li>
+<li>穿透 3：单程最多命中 3 个目标，之后仍飞完全程（只是不再结算）。</li>
+</ul>
+<h3 id="32">3.2 手弩</h3>
+<p>单发最重、弹速 1200 几乎无延迟，射程 800 覆盖半个擂台。穿透 2 让它天然适合打「一条线上的三只」。</p>
+<h3 id="33">3.3 霰铳</h3>
+<p>30° 扇形 5 弹丸，单发 12。<strong>必须贴到约 1.5 格内才能五弹全中</strong>，全中时 DPS 150 是四把最高。这是「用命换输出」的武器。</p>
+<h3 id="34">3.4 裂空光炮</h3>
+<p><strong>松手发射</strong>，与其余三把共用同一条输入通道（不引入「按住持续」）。</p>
+<ul>
+<li><strong>弹道</strong>：600 px/s 的炮弹，飞行带双层尾迹，速度是手弩的一半。<strong>命中第一个敌人、或飞到 6 格终点即炸</strong>，没有穿透。</li>
+<li><strong>爆炸</strong>：半径 1.2 格（120 px），对范围内所有敌人造成 40。直击目标吃 <strong>60 ＋ 40 ＝ 100</strong>，范围内其他目标只吃 40。</li>
+<li><strong>预览</strong>：按住时画一条 6 格直线，终点一个 120 半径的圆圈，与结算同源（读同一个 <code>boomR</code>）。</li>
+<li><strong>DPS 为什么是 111 不是 100</strong>：66.7 ＋ 44.4 ＝ 111。低攻速武器在移动端手感偏「重」，这 10% 溢价是补偿「空一发的挫败感」；对群上限 200（命中 3 只：60 ＋ 40×3 ＝ 180 ÷ 0.9）高于环刃 150 与霰铳 150，但对单 111 低于手弩 125 ⇒「手弩单发最强」的定位不动。</li>
+</ul>
+<p><strong>与刻印的交互</strong>：</p>
+<div class="tw"><table class="two nw">
+<thead>
+<tr>
+<th>刻印</th>
+<th>交互</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>①劫雷</td>
+<td>直击与爆炸<strong>各自独立判暴</strong>（爆炸是 AOE，逐目标单独掷骰）</td>
+</tr>
+<tr>
+<td>⑨裂帛</td>
+<td>直击叠 1 层；爆炸 <code>noPassives</code>，不叠</td>
+</tr>
+<tr>
+<td>⑮狂骨</td>
+<td>直击触发 ＋20% 攻击真伤；爆炸不触发</td>
+</tr>
+</tbody>
+</table></div>
+<p>爆炸这一段不传 <code>knock</code>，因此<strong>不参与坠崖</strong>；但传了 <code>sx/sy</code>，所以它仍是普通伤害，吃精英正面减伤与 BOSS 背后核心。击退 0.35 只挂在直击上。</p>
+<p><strong>与终焉复制体的交互</strong>：爆炸是光炮形状的一部分，复制体照抄——命中你或撞墙/到寿命时，以落点为圆心 <strong>120 半径同值爆炸</strong>（一轮仍恒 8%，复制体的唯一目标是你，爆炸不翻倍总伤，只是把「躲」的要求从弹体 43.2 px 净空放大到落点 <strong>147.2 px</strong> 净空）。被直击命中的同一帧爆炸会被 0.6 s 无敌帧吞掉，不双计；没被直击打到但站在圈内，才吃这一跳 8%。</p>
+<hr />
+<h2 id="_5">四、敌人通则</h2>
+<h3 id="41">4.1 分级与重量</h3>
+<div class="tw"><table class="nw">
+<thead>
+<tr>
+<th>字段</th>
+<th>取值</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>tier</code></td>
+<td><code>mob</code> / <code>elite</code> / <code>boss</code></td>
+<td>决定控制递减、击退折扣、坠崖资格、血条样式</td>
+</tr>
+<tr>
+<td><code>weight</code></td>
+<td><code>light</code> 1 / <code>medium</code> 2 / <code>heavy</code> 4</td>
+<td>只影响击退距离</td>
+</tr>
+<tr>
+<td><code>xp</code></td>
+<td>2 / 3 / 8 / 0</td>
+<td>掉落宝珠颗数</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="42">4.2 出场</h3>
+<ul>
+<li>沿擂台周长等距取点，每只带 ±1.2% 周长抖动，避免全挤在一侧。</li>
+<li>同波出怪错帧 0.05 秒。</li>
+<li>预警圈：普通 0.8 s，精英 1.0 s，BOSS 1.2 s。预警圈结束才落地，落地前不可被打。</li>
+<li>出生点距边界内缩 <code>r + 12</code>，刚落地的单位不参与坠崖（见 4.5）。</li>
+</ul>
+<h3 id="43">4.3 清波判定</h3>
+<p><code>G.pending === 0</code> <strong>且</strong> <code>originalAlive() === 0</code>（只数波次表里配置的原始单位）→ 进入安全期。召唤体、分裂体、复制体全部死光不算清波，这是防止「BOSS 一直召小怪导致永远打不完」的反向保护：波次只认表里那几只。</p>
+<h3 id="44">4.4 控制递减</h3>
+<div class="tw"><table class="nw">
+<thead>
+<tr>
+<th>效果</th>
+<th>小怪</th>
+<th>精英</th>
+<th>BOSS</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>眩晕</td>
+<td>全额</td>
+<td>×0.5</td>
+<td>钳到 0.3 ~ 0.5 s</td>
+</tr>
+<tr>
+<td>定身</td>
+<td>全额</td>
+<td>×0.5</td>
+<td>转为 20% 减速 1.5 s</td>
+</tr>
+<tr>
+<td>减速</td>
+<td>每层 15%，上限 3 层</td>
+<td>同</td>
+<td>同</td>
+</tr>
+<tr>
+<td>冰冻</td>
+<td>3 层减速触发 0.8 s 冰冻</td>
+<td>同</td>
+<td>同</td>
+</tr>
+</tbody>
+</table></div>
+<p>硬减速（<code>slowHard</code>，如敕禁对精英的 50%）与层数减速不叠加，取数值大的那个，总减速上限 75%。</p>
+<h3 id="45">4.5 击退与坠崖</h3>
+<p>击退位移公式：</p>
+<pre><code>push = value × 100 / weight × (精英 ? 0.25 : 1)
+</code></pre>
+<p>「推出擂台边缘即死」是这套战斗的核心物理。但只有<strong>强击退源</strong>才触发：</p>
+<div class="tw"><table class="nw">
+<thead>
+<tr>
+<th>来源</th>
+<th>强度</th>
+<th>可坠崖</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>掷星（遗器）</td>
+<td>1.20</td>
+<td>可</td>
+</tr>
+<tr>
+<td>无咎弹反</td>
+<td>0.80</td>
+<td>可</td>
+</tr>
+<tr>
+<td>爆壳球自爆连锁</td>
+<td>0.50</td>
+<td>可</td>
+</tr>
+<tr>
+<td>武器普攻</td>
+<td>0.12 ~ 0.30</td>
+<td>不可，只推不落</td>
+</tr>
+</tbody>
+</table></div>
+<p>另外三条限制：只对 <code>tier === "mob"</code> 生效；单位必须在场 ≥ 40 px 后才「武装」（防止刚出生就被推下去）；实际推出边界 ≥ 20 px 才判死。轻体怪被掷星一推就是 120 px，重体只有 30 px。</p>
+<h3 id="46-debuff">4.6 玩家侧 debuff：吸能</h3>
+<p>吸能水母（第 4 关）在 200 px 内时，攻击力与移速同时下降 10%／层：</p>
+<ul>
+<li>层数 ＝ 当前在半径内的施加者数量，<strong>封顶 3 层</strong>；</li>
+<li>脱离后共享一个 3 秒窗口，窗口结束整栈清零；</li>
+<li>每帧按「在场源数」重算，所以走掉一只立刻掉一层，玩家数得清自己被几只吸着。</li>
+</ul>
+<h3 id="47">4.7 正面减伤与背后核心</h3>
+<div class="tw"><table class="nw">
+<thead>
+<tr>
+<th>单位</th>
+<th>正面角</th>
+<th>减伤</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>重甲角兽</td>
+<td>90°</td>
+<td>30%</td>
+<td>不可破防</td>
+</tr>
+<tr>
+<td>盾鳍卫</td>
+<td>75°</td>
+<td>50%</td>
+<td>不可破防，转向 75°/s，绕后半径 229 px</td>
+</tr>
+<tr>
+<td>赤刃守卫</td>
+<td>75°</td>
+<td>50%</td>
+<td><strong>可被无咎弹反破防 3 秒</strong>，破防期间正面减伤失效</td>
+</tr>
+</tbody>
+</table></div>
+<p>BOSS 无正面减伤，但有<strong>背后核心</strong>：攻击来源落在 BOSS 朝向 120° 之外时，伤害 ×1.3。所以贴脸绕背对 BOSS 是 30% 的独立增益。</p>
+<h3 id="48">4.8 易伤与破甲</h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>状态</th>
+<th>系数</th>
+<th>来源</th>
+<th>时长</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>易伤 <code>vuln</code></td>
+<td>+20%</td>
+<td>司命标记</td>
+<td>5 s</td>
+</tr>
+<tr>
+<td>破甲 <code>armorBreak</code></td>
+<td>+20%</td>
+<td>星回引爆</td>
+<td>4 s</td>
+</tr>
+</tbody>
+</table></div>
+<p>两者可叠（乘区里是 <code>1 + vuln + 0.2</code>），合计 +40%。</p>
+<h3 id="49">4.9 召唤与分裂的三条铁律</h3>
+<ol>
+<li>每个召唤者同时存活 ≤ 4 只；全场（原始＋召唤＋分裂＋复制）合计 ≤ 30 只，超限时踢掉最老的召唤体。</li>
+<li>召唤体 / 分裂体 / 复制体：<strong>经验 0、不计击杀、不计坠崖</strong>，波末或 BOSS 死亡时统一清除。</li>
+<li>分裂水母死亡帧生子体，子体血量 ＝ 母体终值 × 14%。</li>
+</ol>
+<hr />
+<h2 id="_6">五、关卡与波次</h2>
+<p>血量取自 <code>CFG.levels[i].hp</code> 的终值（每关独立表，<code>hpMul</code> 全为 1）。</p>
+<div class="tw"><table class="nw">
+<thead>
+<tr>
+<th>关</th>
+<th>名称</th>
+<th>W1</th>
+<th>W2</th>
+<th>W3</th>
+<th>血量池 W1/W2/W3</th>
+<th>经验</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>废土擂台</td>
+<td>冲虫 5 · 吐手 3</td>
+<td>冲虫 6 · 爆壳 2 · 吐手 1</td>
+<td>冲虫 5 · 爆壳 3 · 角兽 1</td>
+<td>3360 / 3440 / 4550 ＝ <strong>11350</strong></td>
+<td>62</td>
+</tr>
+<tr>
+<td>2</td>
+<td>潮汐遗迹</td>
+<td>水母 5 · 飞螺 3</td>
+<td>水母 4 · 盾鳍 2 · 飞螺 3</td>
+<td>水母 5 · 盾鳍 3 · 祭司 1</td>
+<td>4290 / 6200 / 9510 ＝ <strong>20000</strong></td>
+<td>83</td>
+</tr>
+<tr>
+<td>3</td>
+<td>赤刃回廊</td>
+<td>疾刃 6 · 炮台 2</td>
+<td>疾刃 6 · 影刺 3 · 炮台 2</td>
+<td>疾刃 6 · 影刺 3 · 守卫 1</td>
+<td>9720 / 12630 / 12640 ＝ <strong>34990</strong></td>
+<td>74</td>
+</tr>
+<tr>
+<td>4</td>
+<td>星屑墓场</td>
+<td>召星童 5 · 织者 5</td>
+<td>童 5 · 吸能 3 · 织者 3</td>
+<td>童 5 · 吸能 3 · 织者 3 · 织母 1</td>
+<td>11500 / 14100 / 19880 ＝ <strong>45480</strong></td>
+<td>104</td>
+</tr>
+<tr>
+<td>5</td>
+<td>终焉之环</td>
+<td>复制体 5 · 陨星 5</td>
+<td>复制体 5 · 环刃使 3 · 陨星 3</td>
+<td>复制体 5 · 陨星 3 · 环刃使 3 · 守望 1</td>
+<td>16950 / 27160 / 35660 ＝ <strong>79770</strong></td>
+<td>104</td>
+</tr>
+</tbody>
+</table></div>
+<p>各关 W1 / W2 / W3 的<strong>只数</strong>依次为 8·9·9 ／ 8·9·9 ／ 8·11·10 ／ 10·11·12 ／ 10·11·12（已含每关 W3 的精英）。第 4、5 关 W1 各 10 只，超出通用的 6~9 上界，属已登记豁免。</p>
+<p><strong>血量池就是每一关的「总耐久」，是配 DPS 的标尺</strong>：第 1 关 W1 是 3360 血 / 8 只，玩家开局 DPS 100~150，清一波要 22~34 秒。</p>
+<p>小怪血量（逐关覆盖）：</p>
+<div class="tw"><table class="nw">
+<thead>
+<tr>
+<th>单位</th>
+<th>L1</th>
+<th>L2</th>
+<th>L3</th>
+<th>L4</th>
+<th>L5</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>轻体</td>
+<td>420</td>
+<td>380</td>
+<td>970</td>
+<td>860</td>
+<td>1270</td>
+</tr>
+<tr>
+<td>中体</td>
+<td>420</td>
+<td>630</td>
+<td>970</td>
+<td>1440</td>
+<td>2120</td>
+</tr>
+<tr>
+<td>重体</td>
+<td>250（爆壳）</td>
+<td>1270</td>
+<td>1950</td>
+<td>—</td>
+<td>4250</td>
+</tr>
+<tr>
+<td>精英</td>
+<td>1700</td>
+<td>2550</td>
+<td>3910</td>
+<td>5780</td>
+<td>8500</td>
+</tr>
+<tr>
+<td>BOSS</td>
+<td>4500</td>
+<td>6750</td>
+<td>10350</td>
+<td>15300</td>
+<td>22500</td>
+</tr>
+</tbody>
+</table></div>
+<p>注意第 1 关爆壳球只有 250 血（它是自爆单位，血薄是设计），而第 5 关同位置的重体环刃使 4250，是 17 倍差。</p>
+<hr />
+<h2 id="_7">六、怪物图鉴</h2>
+<h3 id="61-1">6.1 第 1 关 · 废土擂台</h3>
+<div class="tw"><table class="mob">
+<thead>
+<tr>
+<th>名称</th>
+<th>体型</th>
+<th>HP</th>
+<th>行为</th>
+<th>伤害</th>
+<th>经验</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>裂齿冲虫 <code>charger</code></td>
+<td>r32 轻</td>
+<td>420</td>
+<td>追到 340 px 内 → 0.35 s 前摇 → 720 px/s 冲 0.4 s，CD 2.0</td>
+<td>接触8%</td>
+<td>2</td>
+</tr>
+<tr>
+<td>酸囊吐手 <code>spitter</code></td>
+<td>r38 中</td>
+<td>420</td>
+<td>保持 420 px，横向游走 55，3 连发 0.16 s 间隔，CD 2.4</td>
+<td>弹幕6%</td>
+<td>3</td>
+</tr>
+<tr>
+<td>爆壳球 <code>bomber</code></td>
+<td>r32 轻</td>
+<td><strong>250</strong></td>
+<td>接近到 130 → 1.5 s 引信（期间仍缓步贴近）→ 半径 130 爆炸</td>
+<td>爆炸15%＋击退0.5</td>
+<td>2</td>
+</tr>
+<tr>
+<td>重甲角兽 <code>armored</code> ★</td>
+<td>r46 重</td>
+<td>1700</td>
+<td><strong>无距离门槛</strong>：CD 3.5 s 一到就冲（0.5 s 前摇 / 90 宽 / 360 长 / 720 速，12%，命中即停），与震地（0.6 s / 半径 200 / 10%＋8 发环形弹）抢同一帧时冲锋优先</td>
+<td>接触10%</td>
+<td>8</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>要点</strong>：冲虫的前摇只有 0.35 s，是最容易被贴身偷血的一只；爆壳球是唯一「你不打它也会炸」的单位，用霰铳在 130 px 外点掉最省事；角兽正面 90° 减伤 30%，绕背打。</p>
+<h3 id="62-2">6.2 第 2 关 · 潮汐遗迹</h3>
+<div class="tw"><table class="mob">
+<thead>
+<tr>
+<th>名称</th>
+<th>体型</th>
+<th>HP</th>
+<th>行为</th>
+<th>伤害</th>
+<th>经验</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>分裂水母 <code>jelly</code></td>
+<td>r38 中</td>
+<td>630</td>
+<td>保持 380，单发慢弹 CD 2.9；死亡分裂 2 只小水母（各 14% 母体血）</td>
+<td>弹幕5%</td>
+<td>3</td>
+</tr>
+<tr>
+<td>小水母 <code>jellyling</code></td>
+<td>r22 轻</td>
+<td>子体</td>
+<td>追到 240 → 0.24 s 前摇 → 700 速冲 0.45 s，CD 2.4</td>
+<td>接触5%</td>
+<td>0</td>
+</tr>
+<tr>
+<td>飞弹螺 <code>snail</code></td>
+<td>r32 轻</td>
+<td>380</td>
+<td>保持 300，3 连发 0.26 s 间隔，弹速仅 175（可走位躲）</td>
+<td>弹幕5%</td>
+<td>3</td>
+</tr>
+<tr>
+<td>盾鳍卫 <code>shellfin</code></td>
+<td>r46 重</td>
+<td>1270</td>
+<td><strong>永不冲撞</strong>（dashTrigger 0），只是顶盾推进；正面 75° 减伤 50%，转向 75°/s</td>
+<td>接触8%</td>
+<td>3</td>
+</tr>
+<tr>
+<td>潮汐祭司 <code>priest</code> ★</td>
+<td>r38 中</td>
+<td>2550</td>
+<td>每 5 s 给 300 半径内所有怪回 10% 血</td>
+<td>接触6%</td>
+<td>8</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>要点</strong>：本关的威胁不是伤害而是<strong>耐久</strong>——祭司每秒把周围怪拉回 2% 血，等于给你的 DPS 打七折。优先击杀顺序：祭司 &gt; 水母（防分裂）&gt; 盾鳍卫（绕后）。</p>
+<h3 id="63-3">6.3 第 3 关 · 赤刃回廊</h3>
+<div class="tw"><table class="mob">
+<thead>
+<tr>
+<th>名称</th>
+<th>体型</th>
+<th>HP</th>
+<th>行为</th>
+<th>伤害</th>
+<th>经验</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>疾刃客 <code>blade</code></td>
+<td>r32 轻</td>
+<td>970</td>
+<td>340 内 → 0.6 s 前摇 → 900 速冲 0.45 s，CD 2.6</td>
+<td>接触9%</td>
+<td>2</td>
+</tr>
+<tr>
+<td>铁炮台 <code>cannon</code></td>
+<td>r46 重</td>
+<td>1950</td>
+<td><strong>不移动</strong>，本体以 18°/s 慢转，每 2.9 s 打 8 发环形弹（200 速）</td>
+<td>弹幕5%</td>
+<td>3</td>
+</tr>
+<tr>
+<td>影刺客 <code>shadow</code></td>
+<td>r38 中</td>
+<td>970</td>
+<td>每 8 s 隐身 2 s（隐身期间既不结算接触、也不起手），<strong>现身当帧即可起手</strong>，0.5 s 前摇后 860 速冲 0.4 s，CD 3.2</td>
+<td>接触<strong>15%</strong></td>
+<td>3</td>
+</tr>
+<tr>
+<td>赤刃守卫 <code>guard</code> ★</td>
+<td>r46 重</td>
+<td>3910</td>
+<td>与疾刃客同参冲刺；正面 75° 减伤 50%，<strong>被无咎弹反后破防 3 s</strong></td>
+<td>接触10%</td>
+<td>8</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>要点</strong>：本关是一张「读前摇」的考卷。疾刃客与守卫都是 0.6 s 前摇的直线突进，侧移一步即可；影刺客 15% 接触是全小怪最高，且隐身段无法靠视觉预判，靠「它上次现身的位置 + 8 秒节拍」记时。</p>
+<h3 id="64-4">6.4 第 4 关 · 星屑墓场</h3>
+<div class="tw"><table class="mob">
+<thead>
+<tr>
+<th>名称</th>
+<th>体型</th>
+<th>HP</th>
+<th>行为</th>
+<th>伤害</th>
+<th>经验</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>召星童 <code>star</code></td>
+<td>r38 中</td>
+<td>1440</td>
+<td>保持 340，单发 CD 3.2；每 4.5 s 召 2 只小星屑</td>
+<td>弹幕5%</td>
+<td>3</td>
+</tr>
+<tr>
+<td>小星屑 <code>stardust</code></td>
+<td>r22 轻</td>
+<td>1000</td>
+<td>同小水母：240 → 0.24 s → 700 速冲</td>
+<td>接触5%</td>
+<td>0</td>
+</tr>
+<tr>
+<td>弹幕编织者 <code>weaver</code></td>
+<td>r32 轻</td>
+<td>860</td>
+<td>保持 300，<strong>两路交叉弹网</strong>（枪口各偏 90，内夹 10°，交点在身前 510 px），CD 2.6</td>
+<td>弹幕5%</td>
+<td>3</td>
+</tr>
+<tr>
+<td>吸能水母 <code>leech</code></td>
+<td>r38 中</td>
+<td>1440</td>
+<td>永不突进，顶盾推进；200 px 内每层 −10% 攻击与移速，封顶 3 层</td>
+<td>接触8%</td>
+<td>3</td>
+</tr>
+<tr>
+<td>虚空织母 <code>linker</code> ★</td>
+<td>r46 重</td>
+<td>5780</td>
+<td>320 半径内所有小怪减伤 30%，每帧续约</td>
+<td>接触6%</td>
+<td>8</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>要点</strong>：本关第一次出现「打不动」的感觉——织母的 30% 减伤会把整波怪的 TTK 拉长五成，且它自己 5780 血。吸能水母三层就是 −30% 攻击、−30% 移速，被吸住时不要硬拼，先脱离 3 秒清栈。</p>
+<h3 id="65-5">6.5 第 5 关 · 终焉之环</h3>
+<div class="tw"><table class="mob">
+<thead>
+<tr>
+<th>名称</th>
+<th>体型</th>
+<th>HP</th>
+<th>行为</th>
+<th>伤害</th>
+<th>经验</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>终焉复制体 <code>clone</code></td>
+<td>r38 中</td>
+<td>2120</td>
+<td><strong>复制玩家选的初始武器</strong>（形状一致、弹速钳 660、伤害归一），CD 3.2；选光炮时弹带 120 半径落点爆炸（同值，直击同帧不双计）</td>
+<td>一轮固定8%</td>
+<td>3</td>
+</tr>
+<tr>
+<td>陨星法师 <code>meteorist</code></td>
+<td>r32 轻</td>
+<td>1270</td>
+<td>站定施法，标记准星落点（R 130，预警 0.8 s），3 圈间隔 0.9 s</td>
+<td>落点15%</td>
+<td>3</td>
+</tr>
+<tr>
+<td>环刃使 <code>blader</code></td>
+<td>r46 重</td>
+<td>4250</td>
+<td>保持 300，发穿透环刃（520 速、穿透 3），CD 3.4</td>
+<td>10%</td>
+<td>3</td>
+</tr>
+<tr>
+<td>环之守望 <code>watcher</code> ★</td>
+<td>r46 重</td>
+<td>8500</td>
+<td>不移动，<strong>双梁反向 24°/s</strong> 旋转，梁长 900、宽 26</td>
+<td>每跳 5%</td>
+<td>8</td>
+</tr>
+<tr>
+<td>环之守望·残 <code>watcherWeak</code></td>
+<td>r46 重</td>
+<td>1270</td>
+<td>同守望，但血按普通怪给（BOSS 召唤物，4 只）</td>
+<td>每跳 5%</td>
+<td>0</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>要点</strong>：复制体读的是你的武器，所以你的射程就是它的射程——用霰铳会让它变得无害，用手弩则会被远距离点名。守望的梁扫到 700 px 处线速度 300 px/s，<strong>刚好等于你的移速</strong>，意思是「一直跑就永远差一点」，必须逆着转向切进去。</p>
+<hr />
+<h2 id="boss">七、BOSS</h2>
+<p>五只 BOSS 共用同一套骨架：</p>
+<ul>
+<li>移速 80~120，<strong>追击时保持 150 px 距离</strong>（这就是输出窗口的来源，它不再贴近）。</li>
+<li>接触伤害 10%~12%，每 0.8 s 一跳。</li>
+<li>技能之间由 <code>loop</code>（1.2~2.6 s）定拍：<code>e.t</code> 归零且该技能 CD 到点才出手。</li>
+<li><strong>血量降到 60% 触发 P2/P3</strong>（五只统一，代码里符号仍叫 <code>halfDone</code>／<code>halfKind</code>）。</li>
+<li>死亡：清弹幕 → 清召唤 → 结算所有宝珠 → 回血 30% → 弹遗器与刻印三选一（第 1 关首次给遗器）。</li>
+</ul>
+<h3 id="71-4500">7.1 荒原巨像【撼地者】 · 4500 血</h3>
+<div class="tw"><table class="two nw">
+<thead>
+<tr>
+<th>项</th>
+<th>值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>体型 / 移速</td>
+<td>r90 / 90 px·s⁻¹</td>
+</tr>
+<tr>
+<td>接触</td>
+<td>12%</td>
+</tr>
+<tr>
+<td>节奏</td>
+<td>loop 2.6 s</td>
+</tr>
+</tbody>
+</table></div>
+<div class="tw"><table class="nw skl">
+<thead>
+<tr>
+<th>技能</th>
+<th>前摇</th>
+<th>判定</th>
+<th>伤害</th>
+<th>CD</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>震地</td>
+<td>0.5 s</td>
+<td>半径 240 圆形</td>
+<td>25% + 击退 120</td>
+<td>4.5 s</td>
+</tr>
+<tr>
+<td>环形弹</td>
+<td>—</td>
+<td>16 发、260 速、r14</td>
+<td>6%</td>
+<td>与震地同源</td>
+</tr>
+<tr>
+<td>冲锋</td>
+<td>0.6 s</td>
+<td>100 宽 × 700 长直线，900 速</td>
+<td>16%</td>
+<td>—</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>P2（60%）</strong>：崩裂——0.8 s 预警 → 召 4 只裂齿冲虫（间隔 0.45 s）→ 三连砸，半径 240 / 300 / 360，伤害 12% / 10% / 8%。</p>
+<p><strong>应对</strong>：震地半径 240 对比冲锋直线 700，是本作最「读距离」的一场。三连砸的第一圈最小最痛、第三圈最大最轻，边跑边吃后两圈是可以接受的交换。</p>
+<h3 id="72-6750">7.2 双首海蛇【渊喉】 · 6750 血</h3>
+<div class="tw"><table class="two nw">
+<thead>
+<tr>
+<th>项</th>
+<th>值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>体型 / 移速</td>
+<td>r90 / 95 px·s⁻¹</td>
+</tr>
+<tr>
+<td>接触</td>
+<td>12%</td>
+</tr>
+<tr>
+<td>节奏</td>
+<td>loop 1.6 s（真正的节拍器；两个技能的 CD 只是下限）</td>
+</tr>
+</tbody>
+</table></div>
+<div class="tw"><table class="nw skl">
+<thead>
+<tr>
+<th>头</th>
+<th>技能</th>
+<th>前摇</th>
+<th>判定</th>
+<th>伤害</th>
+<th>CD</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>左</td>
+<td>扇形弹</td>
+<td>0.5 s</td>
+<td><strong>9 发</strong>、34° 扇、325 速、r16</td>
+<td>8%</td>
+<td>2.2 s</td>
+</tr>
+<tr>
+<td>右</td>
+<td>直线吐息</td>
+<td><strong>0.5 s</strong></td>
+<td>1500 长 × <strong>r68</strong> 直条、<strong>600 速</strong></td>
+<td><strong>22%</strong></td>
+<td>2.8 s</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>P2（60%）</strong>：涌潮——两个水龙卷（半径 230、拉力 150、持续 12 s，不坠崖只干扰走位）＋ 新增双头齐射（CD 6 s，实测间隔约 12 s，两个头读同一张表，参数自动跟随上表）。</p>
+<p><strong>应对</strong>：直线吐息 22% 是全作最痛的单次技能。v4.23 把前摇从 1.0 s 砍到 0.5 s、判定半径从 34 翻到 68，于是「看到前摇再横移」的余量从 240 px 掉到 55 px：安全线是离中心线 <strong>95.2 px</strong>（68 ＋ 玩家 27.2），而 0.5 s 里玩家只能走 150 px。这是一招必须<strong>提前站位</strong>的技能，不是反应技能。</p>
+<p>扇形弹从 5 发变 9 发之后，相邻弹心只差 4.25°，在 300 px 处弧距 22.3 px &lt; 弹直径 32 px ⇒ <strong>弹与弹已经贴成一道实心楔</strong>，别再指望从缝里穿。好在它只有 34° 宽，代价是「整体绕开」而不是「找缝」。水龙卷是「不许站着输出」的强制项，它会被从安全位拖回弹道里。</p>
+<h3 id="73-10350">7.3 剑圣【刹那】 · 10350 血</h3>
+<div class="tw"><table class="two nw">
+<thead>
+<tr>
+<th>项</th>
+<th>值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>体型 / 移速</td>
+<td>r90 / <strong>120</strong> px·s⁻¹（五只最快）</td>
+</tr>
+<tr>
+<td>接触</td>
+<td>10%</td>
+</tr>
+<tr>
+<td>节奏</td>
+<td>loop 1.2 s（成对周期 4.60 s ＝ 2.15 s 硬直前摇 ＋ 2 × 1.2 s 等待）</td>
+</tr>
+</tbody>
+</table></div>
+<div class="tw"><table class="nw skl">
+<thead>
+<tr>
+<th>技能</th>
+<th>前摇</th>
+<th>判定</th>
+<th>伤害</th>
+<th>CD</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>居合</td>
+<td>0.6 s</td>
+<td><strong>瞬移 240</strong> + 1500 长 × r40 直线、700 速</td>
+<td>18%</td>
+<td>2.4 s</td>
+</tr>
+<tr>
+<td>剑气扇</td>
+<td>0.35 s</td>
+<td>9 发、<strong>210° 扇</strong>、700 速、r28</td>
+<td><strong>8%</strong></td>
+<td>1.8 s</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>P2（60%）</strong>：剑域——0.8 s 预警 → 12 发环形剑气（300 速、r26、5%）＋ 新增「突进」这一手（16%，<strong>前摇 0.4 s</strong>）。</p>
+<p><strong>应对</strong>：居合先瞬移 240 再出剑，所以「站在它原来位置」是错的、「预判落点」才对。210° 剑气扇意味着只有一个 150° 的缺口，正对时左右两侧都有弹；9 发摊在 210° 上每发隔 26.25°，300 px 处弧距 137 px 仍大于 86.4 px 的净缝线 ⇒ 这一手<strong>还能穿缝</strong>，但单发从 5.5% 涨到 8% 之后，被两侧各擦一下就是 16%，和吃一发居合同价。剑域展开时环弹 12 发，靠边缘的空隙穿过去。</p>
+<p>P2 的「突进」前摇只有 0.4 s（原 0.6），读招窗口比 P1 短 1/3；它和居合的区别是居合先瞬移、突进不瞬移，所以看到瞬移就躲落点、看到举刀就横移。</p>
+<h3 id="74-15300">7.4 虚空母巢【胎渊】 · 15300 血</h3>
+<div class="tw"><table class="two nw">
+<thead>
+<tr>
+<th>项</th>
+<th>值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>体型 / 移速</td>
+<td>r90 / 80 px·s⁻¹</td>
+</tr>
+<tr>
+<td>接触</td>
+<td>12%</td>
+</tr>
+<tr>
+<td>节奏</td>
+<td>loop 2.6 s</td>
+</tr>
+</tbody>
+</table></div>
+<div class="tw"><table class="nw skl">
+<thead>
+<tr>
+<th>技能</th>
+<th>前摇</th>
+<th>判定</th>
+<th>伤害</th>
+<th>CD</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>星隙（P1）</td>
+<td>0.8 s</td>
+<td><strong>36 发全环，不留缺口</strong>，450 速、r18；<strong>0.65 s 后同向再来一轮</strong></td>
+<td><strong>15% × 2</strong></td>
+<td>4.0 s</td>
+</tr>
+<tr>
+<td>常驻漩涡</td>
+<td>—</td>
+<td>2 个，落点固定 <strong>(+300, −150) / (−300, +150)</strong>，半径 280，拉力 120，10 s</td>
+<td><strong>圈内 4%/s</strong></td>
+<td>到期即补</td>
+</tr>
+<tr>
+<td>起手召唤</td>
+<td>—</td>
+<td>3 只小星屑，<strong>各带 2040 盾</strong>，BOSS 有效盾 ＝ 三者之和 ＝ 6120</td>
+<td>—</td>
+<td>不补召</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>P2（60%）</strong>：星隙规格不变（36 发、450 速、15% × 2 轮），CD 压到 <strong>10/3 ≈ 3.3 s</strong>，并加一条：前摇 0.8 s 期间以 <strong>300 px/s 把玩家拽向本体</strong>（1200 px 外不生效；v4.23 由 150 翻倍）。</p>
+<p><strong>应对</strong>：这场 BOSS 的血条有两条——6120 的召唤物护盾排在本体之前，真伤照吸、绕后照加速扣盾。<strong>清三只小星屑 ＝ 拆掉 40% 的耐久</strong>，而且它们不补召。</p>
+<p>星隙从 v4.23 起<strong>没有缺口了</strong>：36 发 r18 的相邻弹心弧距只有 <code>0.175 × R</code>，要装下「弹直径 36 ＋ 玩家有效直径 54.4 ＝ 90.4 px」才有一丝净缝 ⇒ <strong>518 px 以内是实心墙，贴脸找缝这条路已经关闭</strong>。取而代之的两条出口是：</p>
+<ul>
+<li><strong>拉距离</strong>。518 px 之外才有净缝，700 px 处净缝 31.8 px。胎渊移速只有 80（玩家 300），靠走位维持距离是设计给出的正解，不是硬躲。</li>
+<li><strong>硬吃两发</strong>。<code>burstGap</code> 已从 0.3 s 调到 <strong>0.65 s</strong>，越过 0.6 s 的无敌帧 ⇒ 两轮<strong>都要结算</strong>，穿一次环 ＝ <strong>30%</strong>。两轮之间只有 0.05 s 的裸露窗口，躲不掉；第一轮把你顶出原位、第二轮再补一刀，这正是这手技能想要的压迫感。</li>
+</ul>
+<p>于是这道题没有「便宜的答案」了：CD 4.0 s 意味着全程贴脸的代价是 <strong>7.5%/s</strong>（P2 的 3.33 s 更狠，<strong>9%/s</strong>），45 秒的 BOSS 战里如果一直不拉开，理论扣血是 340%——必死。<strong>拉距离从「最优解」升级成「唯一解」</strong>。</p>
+<p>漩涡是把「站错位置」变成长尾惩罚的那一手：2 个对角固定点、半径 280、圈内 <strong>4%/s</strong>，整场 10 s 站满就是 40%。它<strong>不走无敌帧，也不吃减伤与护盾</strong>——血条会安静地掉，别指望靠硬抗。P2 的拉人则把「拉距离」和「别站漩涡里」这两件事同时往本体方向拽，反向抵消位移是唯一解——而拉力翻倍后它不再只是「抵消」：300 px/s 与玩家移速 300 打平，<strong>面朝外跑只能原地不动</strong>，要拉开距离只能靠位移技能或绕弧——而且偏离正后方 60° 时每秒仍净失 150 px，垂直绕跑更是全额 300 px/s 往回送。0.8 s 前摇不操作就会被拽近 240 px，518 px 的安全线瞬间变成 278 px，落进实心墙里。</p>
+<h3 id="75-22500">7.5 终焉之环【末环】 · 22500 血</h3>
+<div class="tw"><table class="two nw">
+<thead>
+<tr>
+<th>项</th>
+<th>值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>体型 / 移速</td>
+<td>r90 / 110 px·s⁻¹</td>
+</tr>
+<tr>
+<td>接触</td>
+<td>12%</td>
+</tr>
+<tr>
+<td>节奏</td>
+<td>loop 2.6 s</td>
+</tr>
+<tr>
+<td>起手召唤</td>
+<td>4 只环之守望·残（各 1270 血，占满每召唤者 4 只上限，不补召）</td>
+</tr>
+</tbody>
+</table></div>
+<div class="tw"><table class="nw skl">
+<thead>
+<tr>
+<th>技能（P1 三手）</th>
+<th>前摇</th>
+<th>判定</th>
+<th>伤害</th>
+<th>CD</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>星隙</td>
+<td>0.8 s</td>
+<td><strong>36 发全环，不留缺口</strong>，450 速、r18；0.65 s 后第二轮</td>
+<td><strong>15% × 2</strong></td>
+<td>6.0 s</td>
+</tr>
+<tr>
+<td>冲锋</td>
+<td><strong>0.4 s</strong></td>
+<td>100 宽 × 700 长直线，900 速</td>
+<td>16%</td>
+<td>5.0 s</td>
+</tr>
+<tr>
+<td>激光扫射</td>
+<td>0.6 s</td>
+<td><strong>双梁、各 90°/s 正反互逆</strong>（相对 180°/s）、宽 26、长 900、8 s</td>
+<td>每跳 10%</td>
+<td>7.0 s</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>P3（60%，换表语义不变，但新表仍是三手）</strong>：P1 的三手全部按新数值重建，另加环缩——</p>
+<div class="tw"><table class="nw skl">
+<thead>
+<tr>
+<th>技能（P3）</th>
+<th>判定</th>
+<th>伤害</th>
+<th>CD</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>星隙·加速</td>
+<td>36 发不留缺口，<strong>500 速</strong>，0.65 s 后第二轮</td>
+<td><strong>15% × 2</strong></td>
+<td>5.0 s</td>
+</tr>
+<tr>
+<td>冲锋</td>
+<td>0.4 s 前摇，900 速 × 700 长</td>
+<td>16%</td>
+<td>5.0 s</td>
+</tr>
+<tr>
+<td>激光扫射</td>
+<td>双梁 90° 正反转，8 s</td>
+<td>每跳 10%</td>
+<td>7.0 s</td>
+</tr>
+</tbody>
+</table></div>
+<p>外加<strong>环缩</strong>：从 P3 起手开始，擂台四边等距内缩 <strong>93.4 px</strong>（面积剩 70%）；此后每 30 秒重算一次，但取值是 <code>max</code>——同一场只生效这一档，不会继续往里收。</p>
+<p><strong>应对</strong>：这是全场唯一会把「场地」当资源消耗的 BOSS，而 v4.23 之后它三手技能对距离的要求各不相同：</p>
+<ul>
+<li><strong>星隙要远</strong>：36 发实心环，518 px 内没有净缝（与胎渊同一套几何）。</li>
+<li><strong>双梁要贴</strong>：90°/s 的切向速度是 <code>1.571 × R</code>，要跟着梁跑而不被扫到必须 <strong>R ≤ 191 px</strong>。而 BOSS 半径 90 ＋ 玩家 32 ＝ <strong>122 px 就已经在接触伤害里了</strong>，中间只剩 69 px 的环形跑道——<strong>这条路线基本被堵死</strong>。</li>
+<li><strong>冲锋读前摇</strong>：0.4 s 里玩家只能走 120 px，而安全线是 64 px（双方半径和），余量 56 px，比原来 0.8 s 时少了一半。</li>
+</ul>
+<p>所以梁的正确答案从「贴脸绕」变成了<strong>穿</strong>：站在 518 px 外时，梁扫过来就正面穿过去，付一跳 10%（<code>BEAM_TICK</code> 0.6 s 节流，穿一次只算一跳），穿完立刻离开梁面，别停在上面蹭。两梁正反转、相对角速度 180°/s，<strong>1 秒重合一次、2 秒一个完整周期</strong>：重合瞬间场上只剩一条射线，是唯一能白换位的窗口；分叉 90° 的中间态才是被卡住的时候。</p>
+<p>因为梁的时限 8 s 长于 CD 7 s，后半段基本常驻两根——别指望它消失。P3 压力不降反升：三手全保留、星隙提速到 500、场地再缩 93.4 px（BOSS 居中时到边缘的余量从 282 px 掉到 189 px）。518 px 仍然拿得到，但一次走位失误就没有第二次机会。</p>
+<hr />
+<h2 id="_8">八、成长</h2>
+<h3 id="81">8.1 经验与升级</h3>
+<ul>
+<li>击杀不再直接加经验，而是掉出<strong>等量的宝珠</strong>：颗数 ＝ 该怪基础经验。所以第 1 关三波恰好 19 / 19 / 24 颗 ＝ 62 点。</li>
+<li>升级需求：<code>8 + 等级 × 4</code>（1 级升 2 级需 12，2 级升 3 级需 16，逐级 +4）。</li>
+<li>倍率只乘在<strong>单颗面值</strong>上（③丰穰 ×1.5），不乘颗数，避免满屏密度随刻印漂。</li>
+<li>吸附半径 110（丰穰 275）；<strong>波次结束与 BOSS 死亡时当场全额结算</strong>，不靠球飞回来。</li>
+<li>一次全吸可跨多级；升级只排队，不打断当前战斗。</li>
+</ul>
+<p>按五关经验总量 62 + 83 + 74 + 104 + 104 ＝ 427 推算，一局到结算时约 <strong>13~14 级</strong>，即 13 次升级三选一 ＋ 4 次过关三选一 ≈ <strong>17 次选择</strong>。</p>
+<h3 id="82">8.2 三选一规则</h3>
+<div class="tw"><table class="two nw">
+<thead>
+<tr>
+<th>项</th>
+<th>规则</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>池过滤（主动）</td>
+<td>已持有则不出现；主动槽满（默认 2，⑬盈箧 +1 到 3）时不再出现新主动</td>
+</tr>
+<tr>
+<td>池过滤（被动）</td>
+<td>可重复出现，直到达到该项 <code>max</code></td>
+</tr>
+<tr>
+<td>抽取</td>
+<td>从合法池里洗牌取 3；池不足 3 则全给；池空则跳过不卡流程</td>
+</tr>
+<tr>
+<td>暂停</td>
+<td>弹窗期间 <code>timeScale = 0</code>，世界完全冻结，不限时</td>
+</tr>
+<tr>
+<td>排队</td>
+<td>安全期 0.7 s 后开始连弹，弹窗期间倒计时不走</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="83-24">8.3 刻印总表（24 项）</h3>
+<p><strong>被动（15 项）</strong></p>
+<div class="tw"><table class="nw">
+<thead>
+<tr>
+<th>ID</th>
+<th>名称</th>
+<th>上限</th>
+<th>效果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>①</td>
+<td>劫雷</td>
+<td>3</td>
+<td>暴击率 +20%/层，暴击伤害 200%</td>
+</tr>
+<tr>
+<td>②</td>
+<td>同契</td>
+<td>1</td>
+<td>召唤物·残影·炮台伤害 +40%、攻速 +30%</td>
+</tr>
+<tr>
+<td>③</td>
+<td>丰穰</td>
+<td>1</td>
+<td>经验面值 +50%，吸附 110 → 275</td>
+</tr>
+<tr>
+<td>⑤</td>
+<td>残锋</td>
+<td>1</td>
+<td>每损失 10% 生命攻击 +8%（最多算到 80%）</td>
+</tr>
+<tr>
+<td>⑧</td>
+<td>凌波</td>
+<td>2</td>
+<td>闪避率 +20%/层；闪避成功移速 +30% 持续 2 s</td>
+</tr>
+<tr>
+<td>⑨</td>
+<td>裂帛</td>
+<td>1</td>
+<td>命中附 1 层流血（≤5 层），每层每 0.5 s 10% 攻击真伤，持续 3 s</td>
+</tr>
+<tr>
+<td>⑪</td>
+<td>点染</td>
+<td>1</td>
+<td>30% 概率附元素：红燃烧（每 0.5 s 10% 攻击）／蓝减速叠 3 层转冰冻 0.8 s／黄闪电链弹 3 目标各 40%</td>
+</tr>
+<tr>
+<td>⑫</td>
+<td>尘梦</td>
+<td>1</td>
+<td>每秒 +1 尘（≤20），每层 +1% 攻击 &amp; −1% 受伤；受击 −3 层；满层每 0.5 s 对 230 内造成 10% 攻击</td>
+</tr>
+<tr>
+<td>⑬</td>
+<td>盈箧</td>
+<td>1</td>
+<td>解锁第 3 主动槽</td>
+</tr>
+<tr>
+<td>⑮</td>
+<td>狂骨</td>
+<td>1</td>
+<td>普攻命中附 20% 攻击真伤，内置 0.25 s</td>
+</tr>
+<tr>
+<td>⑯</td>
+<td>归墟</td>
+<td>1</td>
+<td>命中削目标当前生命 0.5% 真伤（对非小怪上限 3× 攻击），每秒 1 次</td>
+</tr>
+<tr>
+<td>㉑</td>
+<td>淬刃</td>
+<td>1</td>
+<td>受击时对 200 内敌人 50% 攻击伤害，1.2 s 内 −15% 受伤，内置 2 s</td>
+</tr>
+<tr>
+<td>㉒</td>
+<td>喋血</td>
+<td>1</td>
+<td>非 DOT 直接伤害 4% 转生命，池上限 2% 最大生命/秒</td>
+</tr>
+<tr>
+<td>㉓</td>
+<td>垣垒</td>
+<td>1</td>
+<td>每 10 s 得盾（4% + 损失×7.5%，上限 15%）；有盾时 −10% 受伤</td>
+</tr>
+<tr>
+<td>㉔</td>
+<td>完璧</td>
+<td>1</td>
+<td>HP ≥ 95% 时攻击 +15%、移速 +10%、受伤 −10%</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>主动（9 项，占槽位）</strong></p>
+<div class="tw"><table class="nw">
+<thead>
+<tr>
+<th>ID</th>
+<th>名称</th>
+<th>CD</th>
+<th>效果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>④</td>
+<td>敕禁</td>
+<td>15s</td>
+<td>前方 120°/半径 300：小怪定身 3 s，精英减速 50% 1.5 s，BOSS 眩晕 0.5 s</td>
+</tr>
+<tr>
+<td>⑥</td>
+<td>天工</td>
+<td>12s</td>
+<td>准星方向 320 px 处放炮台 8 s，继承 70% 攻击、1 发/秒；子弹命中后 130 半径爆炸，伤害同值</td>
+</tr>
+<tr>
+<td>⑦</td>
+<td>蹑景</td>
+<td>8s</td>
+<td>朝摇杆方向冲 250 px，0.3 s 无敌，原地留 3 s 残影（50% 攻击）</td>
+</tr>
+<tr>
+<td>⑩</td>
+<td>御灵</td>
+<td>15s</td>
+<td>准星 360 px 落点；落点 300 内有怪召巨兽（近战 AOE），否则召游侠（远程），持续 10 s，80% 攻击</td>
+</tr>
+<tr>
+<td>⑭</td>
+<td>无咎</td>
+<td>8s</td>
+<td>0.5 s 格挡。成功：清 250 内非大弹幕、全场 100% 攻击伤害、击退 0.8（可坠崖）、眩晕 1.5 s（BOSS 0.3 s）、打断当前前摇、带破防标记者破防 3 s</td>
+</tr>
+<tr>
+<td>⑰</td>
+<td>星回</td>
+<td>12s</td>
+<td>准星 360 px 落锚，0.8 s 后引爆 260 半径：150% 攻击 + 破甲 20% 4 s + 牵引 0.7 s</td>
+</tr>
+<tr>
+<td>⑱</td>
+<td>青囊</td>
+<td>18s</td>
+<td>回 12% 生命（HP &lt; 50% 时 ×1.5）＋ 10% 护盾 4 s</td>
+</tr>
+<tr>
+<td>⑲</td>
+<td>燃灯</td>
+<td>20s</td>
+<td>8 s 内攻速 +30%，普攻额外 15% 攻击真伤</td>
+</tr>
+<tr>
+<td>⑳</td>
+<td>司命</td>
+<td>12s</td>
+<td>标记准星 700 内 35° 扇内最近 3 个（有 BOSS 则优先只标 BOSS）5 s：易伤 +20%；击杀标记目标返还 50% CD</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="84">8.4 触发限频</h3>
+<p>被动一律「按时间不按次」，与攻速解耦，防止高攻速把触发类被动打成直伤：</p>
+<div class="tw"><table class="two">
+<thead>
+<tr>
+<th>项</th>
+<th>间隔</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>裂帛</td>
+<td>0.3 s</td>
+</tr>
+<tr>
+<td>点染</td>
+<td>0.5 s</td>
+</tr>
+<tr>
+<td>狂骨</td>
+<td>0.25 s</td>
+</tr>
+<tr>
+<td>归墟</td>
+<td>1.0 s</td>
+</tr>
+<tr>
+<td>从者（召唤物触发共用闸）</td>
+<td>0.5 s</td>
+</tr>
+<tr>
+<td>燃灯</td>
+<td>0.5 s</td>
+</tr>
+<tr>
+<td>尘梦风暴</td>
+<td>0.5 s</td>
+</tr>
+<tr>
+<td>淬刃</td>
+<td>2.0 s</td>
+</tr>
+<tr>
+<td>垣垒</td>
+<td>10.0 s</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="_9">九、遗器</h2>
+<h3 id="91">9.1 获取与释放</h3>
+<ul>
+<li><strong>全局仅 1 件</strong>：第 1 关 BOSS 死亡后弹三选一，选完不再出现。</li>
+<li>释放：触屏按遗器键并拖出方向（≥10 px）后松手；点按沿用当前朝向。桌面 <code>X</code>，方向由鼠标位置决定。</li>
+<li>CD 每关开局清零（换关不带着冷却进下一关）。</li>
+<li>遗器伤害默认<strong>不吃被动钩子</strong>（裂帛、点染、归墟、狂骨都不触发），七弦是唯一例外。</li>
+</ul>
+<h3 id="92">9.2 六件遗器</h3>
+<div class="tw"><table class="nw">
+<thead>
+<tr>
+<th>名称</th>
+<th>CD</th>
+<th>方向性</th>
+<th>效果</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>沧溟</td>
+<td>20s</td>
+<td>否</td>
+<td>水波推进 420：200% 攻击真伤，每命中吸血 4%（上限 20%），获得 15% 护盾 4 s；残血时伤害与吸血翻倍</td>
+</tr>
+<tr>
+<td>七弦</td>
+<td>15s</td>
+<td>是，射程 900</td>
+<td>准星方向 7 道贯穿音波，间隔 0.12 s，每道 100% 真伤<strong>并触发被动</strong>；击杀减 CD（单次上限 6 s，对 BOSS 每满 3% 最大生命减 1 s）</td>
+</tr>
+<tr>
+<td>斩月</td>
+<td>18s</td>
+<td>是，射程 300</td>
+<td>瞬步 220 后劈 180°/300：小怪直接处决；精英/BOSS 造成 5% 最大生命真伤，若其血量 ≤15% 则改为 15%</td>
+</tr>
+<tr>
+<td>忘川</td>
+<td>22s</td>
+<td>否</td>
+<td>0.6 s 全屏吸附 → 260 半径引爆：150% 伤害，每个被吸目标 +10%（上限 +100%）并吸血</td>
+</tr>
+<tr>
+<td>掷星</td>
+<td>18s</td>
+<td>否</td>
+<td>0.9 s 内落下 10 颗陨石（60% 真伤 + <strong>强击退 1.2，可坠崖</strong>）；30% 概率刷新 CD，连发 10 → 5 → 2 颗</td>
+</tr>
+<tr>
+<td>心渊</td>
+<td>20s</td>
+<td>否</td>
+<td>领域 500/5 s：魅惑最多 5 个普通怪（变友方、不打玩家），到期或死亡自爆 200% 真伤；精英与 BOSS 改为深渊印记（每秒 50% 攻击真伤）</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>选择逻辑</strong>：掷星是唯一能主动「清场」的遗器（把怪推下深渊 = 无视血量的击杀），沧溟是续航，七弦是单体爆发，斩月是处决，忘川是聚怪，心渊是控场。因为它们全局只有一件，这一选基本决定了后半程的打法。</p>
+<hr />
+<h2 id="_10">十、流程与状态机</h2>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>进入条件</th>
+<th>本阶段做什么</th>
+<th>退出条件</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>title</code></td>
+<td>启动游戏</td>
+<td>封面 + 「开始游戏」按钮</td>
+<td>点击按钮</td>
+</tr>
+<tr>
+<td>武器四选一</td>
+<td>点开始</td>
+<td>环刃 / 手弩 / 霰铳 / 光炮 四选一，世界冻结</td>
+<td>选定 → 第 1 关 W1</td>
+</tr>
+<tr>
+<td><code>wave</code></td>
+<td>选完武器 / 安全期结束</td>
+<td>出怪、战斗、掉宝珠</td>
+<td><code>pending = 0</code> 且原始怪全灭</td>
+</tr>
+<tr>
+<td><code>safe</code></td>
+<td>波次结束 / BOSS 死亡</td>
+<td>3 s，0.25 倍速；清弹幕、清召唤、当场结算宝珠</td>
+<td>倒计时归零</td>
+</tr>
+<tr>
+<td>（三选一排队）</td>
+<td>安全期 0.7 s 后</td>
+<td>遗器（若有）→ 刻印 → 刻印… 逐个弹出，世界冻结</td>
+<td>全部选完</td>
+</tr>
+<tr>
+<td>BOSS 战</td>
+<td>第 3 波结束</td>
+<td>单只 BOSS，60% 进 P2/P3</td>
+<td>BOSS 死亡</td>
+</tr>
+<tr>
+<td><code>cleared</code> / <code>dead</code></td>
+<td>第 5 关 BOSS 死 / HP 归零</td>
+<td>结算面板</td>
+<td>点击任意处或 <code>R</code> → 重开</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="101">10.1 关键时点</h3>
+<div class="tw"><table class="two">
+<thead>
+<tr>
+<th>时点</th>
+<th>处理</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>波次结束</td>
+<td>清空敌方弹幕、清除全部召唤体、当场结算场上所有宝珠</td>
+</tr>
+<tr>
+<td>安全期</td>
+<td>3 秒真实时间；<code>timeScale = 0.25</code>（子弹时间）；弹窗期间 <code>timeScale = 0</code> 且倒计时不走</td>
+</tr>
+<tr>
+<td>BOSS 死亡</td>
+<td>清弹幕、清召唤、结算宝珠、回血 30%、弹遗器（首次）＋ 1 次刻印</td>
+</tr>
+<tr>
+<td>换关</td>
+<td><code>relicCd = 0</code>，其余状态（刻印、等级、血量）全部延续</td>
+</tr>
+<tr>
+<td>第 5 关 BOSS 死亡</td>
+<td>直接进入 <code>cleared</code>，不再弹窗</td>
+</tr>
+<tr>
+<td>阵亡</td>
+<td>立即结算场上宝珠（否则结算面板的等级会低于实际到手经验）</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="102">10.2 结算面板</h3>
+<p>阵亡与通关共用一张面板，只改文案：</p>
+<pre><code>通关 / 阵亡
+五关全清 · 终焉之环        ／  倒在 第 3 关 赤刃回廊 · 第 2 / 3 波
+击杀 412    等级 14    用时 1043 秒    刻印 9 项    武器 弦鸣手弩
+</code></pre>
+<p>面板不含评分与评级——本作的成绩单就是这五个数。</p>
+<hr />
+<h2 id="_11">十一、平衡口径</h2>
+<h3 id="111">11.1 三条硬判据</h3>
+<div class="tw"><table class="nw">
+<thead>
+<tr>
+<th>判据</th>
+<th>内容</th>
+<th>现状</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>追击可逃</td>
+<td>所有「前摇 + 突进」组合的实际射程（速度 × 持续时间）必须比触发距离长 ≥ 100 px，否则玩家站着不动它也在空放</td>
+<td>冲虫 288、疾刃客 405、影刺客 344、小水母 315，均在线上或线上 +129</td>
+</tr>
+<tr>
+<td>环弹可穿</td>
+<td>环形弹幕在半径 R 处相邻弹心的弧距，必须装得下「弹直径 ＋ 玩家有效直径 54.4」，否则该半径处就是一道实心墙</td>
+<td>36 发 r18 ⇒ <code>2πR/36 &gt; 90.4</code>，临界半径 <strong>518 px</strong>（700 px 处净缝 31.8）。胎渊 / 末环 都用不留缺口的实心环，靠 80 / 110 的低移速把「拉开距离」做成唯一解</td>
+</tr>
+<tr>
+<td>扫线可切</td>
+<td>旋转梁的切向速度 <code>ω × R</code> 必须 ≤ 玩家移速 300，否则永远追不上</td>
+<td>末环 90°/s ⇒ 可跟线半径 <strong>191 px</strong>（@700 是 1100，超线 <strong>3.67 倍</strong>）；守望常驻梁 24°/s @700 为 293，在线上</td>
+</tr>
+<tr>
+<td>连发不双计</td>
+<td>同一手技能的连发间隔必须 ≥ 无敌帧（<code>0.6 s</code>），否则两轮只算一次伤害，第二轮的预算全部作废</td>
+<td>星隙 <code>burstGap</code> 0.65 s ＞ 0.6 s ⇒ 两轮都结算，一手实打 <strong>30%</strong>（v4.23 由 0.3 上调，正是为了这 0.05 s 的裸露窗口）</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="112-ttk-dps">11.2 TTK 与 DPS 门槛</h3>
+<div class="tw"><table>
+<thead>
+<tr>
+<th>场景</th>
+<th>血量</th>
+<th>基准 DPS</th>
+<th>TTK</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>第 1 关 W1</td>
+<td>3360</td>
+<td>100（环刃）</td>
+<td>约 34 s</td>
+</tr>
+<tr>
+<td>第 1 关 BOSS</td>
+<td>4500</td>
+<td>100</td>
+<td>约 45 s</td>
+</tr>
+<tr>
+<td>第 3 关 W3</td>
+<td>12640</td>
+<td>250 左右</td>
+<td>约 50 s</td>
+</tr>
+<tr>
+<td>第 5 关 BOSS</td>
+<td>22500</td>
+<td>500 左右</td>
+<td>约 45 s</td>
+</tr>
+</tbody>
+</table></div>
+<p>BOSS 段的目标时长是 45 秒：短于 30 秒会让 P3 机制来不及展示，长于 60 秒会让「一直绕背」变成机械劳动。</p>
+<h3 id="113-bug">11.3 已知偏离（有意为之，不是 bug）</h3>
+<div class="tw"><table class="two">
+<thead>
+<tr>
+<th>项</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>第 4、5 关 W1 各有 10 只</td>
+<td>超出「单波 6~9 只」的通用上界，由「分关示例总数可高于上限」豁免</td>
+</tr>
+<tr>
+<td>星隙不留缺口、且双轮都要吃</td>
+<td>对「环弹可穿」判据而言 518 px 内不成立——这是把「找缝」型技能改写成「距离」型技能的刻意取舍，靠 BOSS 低速（80 / 110）保证 518 px 可以维持；<code>burstGap 0.65</code> 又把硬穿价格翻到 30%，出口只剩一条</td>
+</tr>
+<tr>
+<td>末环激光 90°/s 在 700 px 处 1100 px/s</td>
+<td>超过「扫线可切」<strong>3.67 倍</strong>（v4.23 由 36 → 45 → 90°/s，并从单梁改成双梁正反转）。跟线半径 191 px 与 122 px 的接触线只差 69 px ⇒ 跟线的路子实际作废，只剩「穿梁付一跳 10%」</td>
+</tr>
+<tr>
+<td>渊喉扇形弹 9 发贴在 4.25° 上</td>
+<td>相邻弹心弧距在任何可得距离（≤ 918 px）都装不下 86.4 px 的净缝 ⇒ 是一道<strong>实心楔</strong>；但它只有 34° 宽，绕开成本低，不按「环弹可穿」判</td>
+</tr>
+<tr>
+<td>赤刃守卫与疾刃客冲刺同参</td>
+<td>v4.20 起守卫有冲刺（原为顶盾推进），刻意让第 3 关的两种突进读同一条前摇</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<h2 id="a">附录 A · 参数总表</h2>
+<div class="tw"><table class="two nw">
+<thead>
+<tr>
+<th>参数</th>
+<th>值</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>擂台</td>
+<td>1600 × 900，圆角 180，外围 20 px 适配留白</td>
+</tr>
+<tr>
+<td>逻辑格</td>
+<td>100 px</td>
+</tr>
+<tr>
+<td>玩家</td>
+<td>HP 1000 / ATK 100 / 移速 300 / r32 / 无敌 0.6 s / 吸附 110</td>
+</tr>
+<tr>
+<td>出怪预警</td>
+<td>0.8 s（精英 1.0／BOSS 1.2）</td>
+</tr>
+<tr>
+<td>同波错帧</td>
+<td>0.05 s</td>
+</tr>
+<tr>
+<td>安全期</td>
+<td>3.0 s，0.25 倍速，0.7 s 后弹窗</td>
+</tr>
+<tr>
+<td>接触内置 CD</td>
+<td>0.8 s</td>
+</tr>
+<tr>
+<td>敌人上限</td>
+<td>单召唤者 4，全场 30</td>
+</tr>
+<tr>
+<td>坠崖门槛</td>
+<td>武装距离 40 px，推出 20 px，仅 mob</td>
+</tr>
+<tr>
+<td>暴击</td>
+<td>每层劫雷 20%，倍率 2.0</td>
+</tr>
+<tr>
+<td>减伤地板</td>
+<td>0.20</td>
+</tr>
+<tr>
+<td>控制上限</td>
+<td>减速 75%</td>
+</tr>
+<tr>
+<td>强击退源</td>
+<td>掷星 1.2 / 无咎 0.8 / 爆壳连锁 0.5</td>
+</tr>
+<tr>
+<td>BOSS 阶段线</td>
+<td>60% 最大生命</td>
+</tr>
+<tr>
+<td>过关回血</td>
+<td>+30% 最大生命</td>
+</tr>
+<tr>
+<td>升级曲线</td>
+<td>8 + 4 × 等级</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="b">附录 B · 代码索引</h2>
+<div class="tw"><table class="two">
+<thead>
+<tr>
+<th>内容</th>
+<th>位置</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>全局配置 <code>CFG</code></td>
+<td>59</td>
+</tr>
+<tr>
+<td>关卡表 <code>CFG.levels</code></td>
+<td>391</td>
+</tr>
+<tr>
+<td>刻印表 <code>SEALS</code></td>
+<td>480</td>
+</tr>
+<tr>
+<td>限频表 <code>GATE</code></td>
+<td>534</td>
+</tr>
+<tr>
+<td>遗器表 <code>RELICS</code></td>
+<td>542</td>
+</tr>
+<tr>
+<td>全局状态 <code>G</code></td>
+<td>732</td>
+</tr>
+<tr>
+<td>攻击力 <code>attackPower()</code></td>
+<td>814</td>
+</tr>
+<tr>
+<td>受伤 <code>damagePlayer()</code></td>
+<td>1257</td>
+</tr>
+<tr>
+<td>伤害管线 <code>damageEnemy()</code></td>
+<td>1301</td>
+</tr>
+<tr>
+<td>击退／坠崖 <code>applyKnock()</code></td>
+<td>1434</td>
+</tr>
+<tr>
+<td>状态与 DOT <code>updateStatus()</code></td>
+<td>1479</td>
+</tr>
+<tr>
+<td>经验宝珠 <code>dropXp()</code> / <code>sweepOrbs()</code></td>
+<td>1579 / 1600</td>
+</tr>
+<tr>
+<td>开波 <code>startWave()</code> / BOSS 波 <code>startBossWave()</code></td>
+<td>1663 / 1698</td>
+</tr>
+<tr>
+<td>安全期 <code>enterSafe()</code> / BOSS 结算 <code>bossCleared()</code></td>
+<td>1882 / 1892</td>
+</tr>
+<tr>
+<td>三选一 <code>openPick()</code> / <code>pickTapIndex()</code></td>
+<td>1953 / 1983</td>
+</tr>
+<tr>
+<td>主动刻印 <code>castSeal()</code></td>
+<td>2033</td>
+</tr>
+<tr>
+<td>遗器释放 <code>castRelic()</code></td>
+<td>2317</td>
+</tr>
+<tr>
+<td>冲刺 AI <code>updateCharger()</code></td>
+<td>2571</td>
+</tr>
+<tr>
+<td>BOSS 状态机 <code>updateBoss()</code></td>
+<td>2954</td>
+</tr>
+<tr>
+<td>星隙 <code>bossGap()</code></td>
+<td>3166</td>
+</tr>
+<tr>
+<td>旋转梁 <code>makeBeams()</code> / <code>updateBeams()</code></td>
+<td>2783 / 2792</td>
+</tr>
+<tr>
+<td>漩涡 <code>spawnVortices()</code> / <code>updateVortices()</code></td>
+<td>3198 / 3207</td>
+</tr>
+<tr>
+<td>主循环 <code>update(dt)</code></td>
+<td>3400</td>
+</tr>
+<tr>
+<td>HUD <code>drawHUD()</code></td>
+<td>4672</td>
+</tr>
+<tr>
+<td>结算面板 <code>drawEndPanel()</code></td>
+<td>4860</td>
+</tr>
+<tr>
+<td>标题 <code>drawTitle()</code></td>
+<td>4889</td>
+</tr>
+</tbody>
+</table></div>
+<hr />
+<p><strong>文档口径说明</strong>：本文所有数值直接读自代码常量，注释中出现的「v4.20 他直接数」「第 XX 项」等是历次平衡回执的痕迹，代表该值经过人工拍板而非推导得出。<strong>本版对应 v4.23</strong>（胎渊 / 末环 的星隙改成不留缺口的双轮实心环且 <code>burstGap</code> 0.65 s 越过无敌帧、末环激光双梁提速到 90°/s 并进入 P3、渊喉扇形 9 发／吐息 r68、刹那剑气扇 8% 且突进前摇 0.4 s）。若代码与本文不一致，以代码为准，并请同步更新本文对应表格。</p>
+</main>
+</div>
+<script>
+(function(){
+  const links=[...document.querySelectorAll('nav a')];
+  const secs=links.map(a=>document.getElementById(decodeURIComponent(a.getAttribute('href').slice(1)))).filter(Boolean);
+  function upd(){
+    let idx=0; const y=window.scrollY+140;
+    secs.forEach((s,i)=>{ if(s.offsetTop<=y) idx=i; });
+    links.forEach((a,i)=>{
+      const on = i===idx;
+      a.style.color = on ? 'var(--cyan)' : '';
+      a.style.background = on ? 'rgba(95,214,232,.08)' : '';
+      a.style.borderLeftColor = on ? 'var(--cyan)' : 'transparent';
+    });
+  }
+  window.addEventListener('scroll', upd, {passive:true});
+  window.addEventListener('resize', upd);
+  upd();
+})();
+</script>
+</body>
+</html>

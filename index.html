@@ -22,7 +22,7 @@
 
 /* ============================================================
    《末环幸存者》
-   范围：批次1 全部 + 初始武器三选一与三把弹道 / 刻印数据层20项 /
+   范围：批次1 全部 + 初始武器四选一与四把弹道 / 刻印数据层20项 /
         安全期三选一弹窗 / 主动槽·CD·盈箧第3槽 / 被动叠加与限频
    数值取自《核心设计定稿 v2.2》第一、二、三、四、五、六、十、十一节
    ============================================================ */
@@ -63,7 +63,7 @@ const CFG = {
     speed: 300, r: 32, iframes: 0.6, bulletR: 8,
     magnet: 110,                           // 批次5 第18项（拍板A）：经验宝珠的吸附半径，③丰穰再乘一档
   },
-  weapons: {                               // 第五章：三把初始武器。木桩 DPS 环刃 100／手弩 125／霰铳 150（霰铳要 5 弹丸全中）
+  weapons: {                               // 第五章：四把初始武器。木桩 DPS 环刃 100／手弩 125／霰铳 150（霰铳要 5 弹丸全中）／光炮 111（直击 66.7＋爆炸 44.4；低攻速的 10% 手感溢价）
     ring: {
       key: "ring", name: "环刃·残响", tag: "中距离穿透回旋",
       cd: 0.50, dmg: 25, speed: 700, range: 450, pierce: 3,
@@ -83,8 +83,14 @@ const CFG = {
       kind: "pellet", color: "#ff9a5c", r: 10,
       tip: "30° 五弹丸，射程 3.8 格；对小怪贴到约 1.5 格内才全中",
     },
+    cannon: {                              // 裂空光炮：直击 60＋爆炸 40，爆炸 noPassives、不击退不坠崖（2.4 节与既有三把的交互）
+      key: "cannon", name: "裂空光炮", tag: "中远距离落点爆炸",
+      cd: 0.90, dmg: 60, boomDmg: 40, speed: 600, range: 600, pierce: 0,
+      boomR: 120, knock: 0.35, kind: "cannon", color: "#c0a0ff", r: 16,
+      tip: "6 格直线，终点或命中即炸：直击 60＋40，半径 1.2 格溅射 40",
+    },
   },
-  weaponOrder: ["ring", "cross", "scatter"],   // 首局默认高亮环刃
+  weaponOrder: ["ring", "cross", "scatter", "cannon"],   // 首局默认高亮环刃
   wave: {
     warning: 0.8,                          // 出生预警圈
     spawnStagger: 0.05,                     // 同波出怪错帧，避免同帧压满屏
@@ -677,7 +683,7 @@ class Pool {
 const newBullet = () => ({
   active: false, x: 0, y: 0, vx: 0, vy: 0, r: 8, dmg: 0, life: 0, hue: "",
   kind: "bolt", wkey: "cross", phase: "out", traveled: 0, range: 800, speed: 1200,
-  pierce: 0, hits: 0, ang: 0, ally: false, big: false, seq: 0, boomR: 0, shape: "",
+  pierce: 0, hits: 0, ang: 0, ally: false, big: false, seq: 0, boomR: 0, boomDmg: 0, shape: "",
   hited: [],
 });
 const newEnemy = () => ({
@@ -1039,8 +1045,8 @@ window.addEventListener("keydown", (e) => {
     return;
   }
   if (G.paused) return;
-  if (G.pick) {                              // 弹窗内 1/2/3 直接选
-    if (k === "1" || k === "2" || k === "3") pickTapIndex(+k - 1);
+  if (G.pick) {                              // 弹窗内 1/2/3/4 直接选
+    if (k === "1" || k === "2" || k === "3" || k === "4") pickTapIndex(+k - 1);
     return;
   }
   if (k === " ") { e.preventDefault(); tryFire(); }
@@ -1114,6 +1120,7 @@ function spawnBullet(w, ang, kind) {
   b.pierce = w.pierce;
   b.knock = w.knock || 0;
   b.boomR = 0;                       // 第 50 项①：爆炸只属于炮台子弹，池化对象必须显式清掉
+  b.boomDmg = w.boomDmg ? scaleAtk(w.boomDmg) : 0;   // 光炮的溅射段：40 面值随攻击力缩放，其余武器恒 0
   b.hits = 0;
   b.ally = false;
   b.big = false;
@@ -1142,7 +1149,12 @@ function updateBullet(b, wdt) {
     b.x += b.vx * wdt; b.y += b.vy * wdt;
   }
   b.life -= wdt;
-  if (b.life <= 0 || outsideArena(b.x, b.y, 60)) b.active = false;
+  if (b.life <= 0) {                                       // 到射程终点
+    if (b.kind === "cannon" && b.active) { cannonBoom(b); b.active = false; return; }
+    b.active = false;
+    return;
+  }
+  if (outsideArena(b.x, b.y, 60)) b.active = false;
 }
 
 function bulletCollide(b) {
@@ -1159,10 +1171,29 @@ function bulletCollide(b) {
     damageEnemy(e, b.dmg, { crit: true, basic: !b.ally, ally: b.ally, src: b, sx: player.x, sy: player.y,
       knock: b.knock, kx: b.vx, ky: b.vy });
     spawnParticle(b.x, b.y, rand(-80, 80), rand(-80, 80), 0.15, 3, b.hue);
+    if (b.kind === "cannon") { cannonBoom(b); b.active = false; return; }   // 光炮：命中第一个目标即炸（pierce 0，直击 60 已在上面结算，爆炸 40 在 cannonBoom 里对同一目标补上）
     if (b.boomR) bulletBoom(b);
     b.hits++;
     if (b.kind !== "ring" && b.hits >= maxTargets) b.active = false;
   });
+}
+
+/* ---------------- 光炮落点爆炸（裂空光炮 2.2 节） ----------------
+   直击走 bulletCollide 常规通道（basic ⇒ ①劫雷判暴、⑨裂帛叠层、⑮狂骨触发、knock 0.35 正常坠崖结算）；
+   爆炸这一段按 2.4 节规定：noPassives ⇒ ⑨⑮不触发；crit:true + basic:true 仅供 ①劫雷 掷骰
+   （damageEnemy 里每个目标独立 roll，AOE 逐只判暴即"各自独立判暴击"）；不传 knock ⇒ 不参与坠崖；
+   传 sx/sy ⇒ 爆炸是普通伤害，吃精英正面减伤与 BOSS 背后核心判定。直击目标不跳过——它还要再吃 40 凑成 100。 */
+function cannonBoom(b) {
+  for (const e of enemies.items) {
+    if (!e.active || e.hp <= 0 || e.charmed > 0) continue;
+    if (dist(b.x, b.y, e.x, e.y) >= CFG.weapons.cannon.boomR + e.r) continue;
+    damageEnemy(e, b.boomDmg, { crit: true, basic: true, noPassives: true, sx: player.x, sy: player.y });
+  }
+  for (let i = 0; i < 14; i++) {
+    const a = rand(0, TAU), sp = rand(100, 320);
+    spawnParticle(b.x, b.y, Math.cos(a) * sp, Math.sin(a) * sp, rand(0.2, 0.4), rand(4, 8), b.hue);
+  }
+  G.shake = Math.min(0.3, G.shake + 0.08);
 }
 
 // 第 50 项 B（天工爆炸）：只有炮台子弹走到这里。四项规定逐条落在这里——
@@ -1184,13 +1215,14 @@ function bulletBoom(b) {
 
 /* ---------------- 批次4b-4 新原语一：复制（第 93 项他改宾语为"玩家选的初始武器"，第 104 项甲钳速＋归一） ----------------
    G.weapon 是全库唯一的武器字段、开局由 openPick("weapon") 写一次，中途没有换武器通道 ⇒ "初始武器"与"当前武器"同物。
-   形状表只抄三把的**几何**（发数／半径／扇角／穿透），弹速与伤害一律归一 ⇒ "复制了哪一把"只改变形状，不改变强度。
+   形状表只抄四把的**几何**（发数／半径／扇角／穿透），弹速与伤害一律归一 ⇒ "复制了哪一把"只改变形状，不改变强度。
    第 107 项甲：环刃只发去程。回程靠 pBullets 那一族的 phase／ringReturn，eBullets 没有这条通道，所以复制体的环刃不回旋。 */
 
 const COPY_SHAPES = {
   ring:    { n: 1, r: 24, spread: 0,         pierce: 3 },   // 1 发（maxActive 3 是同时在飞的把数上限，不是发数——第 107 项勘误）
   cross:   { n: 1, r: 13, spread: 0,         pierce: 2 },
   scatter: { n: 5, r: 10, spread: 30 * DEG,  pierce: 0 },
+  cannon:  { n: 1, r: 16, spread: 0,         pierce: 0, boomR: 120 },   // 光炮复制体：爆炸是它形状的一部分——命中你或撞墙时 120 半径同值爆炸；唯一目标是你 ⇒ 一轮仍恒 8%，爆炸只放大"躲"的要求
 };
 const COPY_SPEED = 660;          // v4.20 他直接数：终焉复制体弹速钳 460→660。原 460 是第 104 项甲判据【复制】三把钳上界 467.8／528.2／547.4 取最小 ⇒ 660 超三条线（1.41／1.25／1.21 倍），@150 三把形状都贴脸必中——他的数，读数见第十二章 v4.20 节
 const COPY_VOLLEY_PCT = 0.08;    // 一轮恒 8% 最大生命＝80 点，与复制了哪一把无关；CD 3.2 ⇒ 面值 25 dps＝档位 500 的 5.0%
@@ -1205,7 +1237,21 @@ function fireCopy(e) {
     const ang = a + (s.n > 1 ? (i - (s.n - 1) / 2) * (s.spread / (s.n - 1)) : 0);
     const b = spawnShot(e.x, e.y, ang, COPY_SPEED, s.r, pct, w.color, false);
     b.pierce = s.pierce;
+    if (s.boomR) b.boomR = s.boomR;
   }
+}
+
+/* ---------------- 光炮复制体的落点爆炸 ----------------
+   与对敌的 cannonBoom 同构但目标只有玩家：伤害与弹体同值（COPY_VOLLEY 归一不变，一轮恒 8%），
+   爆炸半径只把"躲"的要求从弹体 43.2px 净空放大到落点 147.2px 净空（120 ＋ 玩家 0.85 倍口径 27.2）。
+   直击与爆炸同帧时，第二发 damagePlayer 被 0.6s 无敌帧吞掉 ⇒ 不会双计。 */
+function cloneBoom(b) {
+  if (dist(b.x, b.y, player.x, player.y) <= b.boomR + player.r * 0.85) damagePlayer(b.dmg);
+  for (let i = 0; i < 12; i++) {
+    const a = rand(0, TAU), sp = rand(100, 300);
+    spawnParticle(b.x, b.y, Math.cos(a) * sp, Math.sin(a) * sp, rand(0.2, 0.4), rand(4, 8), b.hue);
+  }
+  G.shake = Math.min(0.3, G.shake + 0.06);
 }
 
 // 第 99 项甲：落点标记走 0.85 倍口径（＝27.2，与弹幕同一把尺）；出厂 detonateBomber 的 0.5 倍（＝16）不动，两套并存。
@@ -1250,6 +1296,7 @@ function spawnShot(x, y, ang, speed, r, pct, hue, big, shape) {
   b.big = !!big;
   b.shape = shape || "";                     // v4.12：唯一读者是 drawBullets 的月牙分支，判定仍走同一个圆
   b.pierce = 0;                              // 第 105 项甲：命中后计数减一、不减则消；池化对象每个 obtain 点都要复位
+  b.boomR = 0;                               // 光炮复制体的爆炸圈：同样属于"每个 obtain 点必须显式清掉"的池化字段
   b.hitPlayer = false;                       // 穿透弹与玩家重叠期间只结算一次，否则每帧烧掉一层 pierce
   return b;
 }
@@ -3498,7 +3545,10 @@ function update(dt) {
 
   eBullets.each((b) => {
     b.x += b.vx * wdt; b.y += b.vy * wdt; b.life -= wdt;
-    if (b.life <= 0 || outsideArena(b.x, b.y, 60)) { b.active = false; return; }
+    if (b.life <= 0 || outsideArena(b.x, b.y, 60)) {
+      if (b.boomR) cloneBoom(b);               // 光炮复制体：撞墙/到寿命也炸（射程语义沿用"复制体不抄射程"的既有口径）
+      b.active = false; return;
+    }
     if (dist(b.x, b.y, player.x, player.y) < b.r + player.r * 0.85) {
       // 第 105 项甲：pierce > 0 的弹命中后不消、计数减一，飞出去继续走。eBullets 全库只有玩家一个目标
       // （allies 不进这个循环）⇒ "穿透"在敌人侧的唯一承载物就是"穿过玩家而不是消失"。
@@ -3507,6 +3557,7 @@ function update(dt) {
       } else {
         b.active = false;
         damagePlayer(b.dmg);
+        if (b.boomR) cloneBoom(b);             // 直击后同帧爆炸：无敌帧吞掉第二跳，玩家只吃 8%；没被直击打到但站在圈内才吃爆炸
       }
     } else b.hitPlayer = false;
   });
@@ -4200,6 +4251,24 @@ function drawBullets() {
       ctx.restore();
       return;
     }
+    if (b.boomR > 0) {                                      // 光炮复制体：弹体＋落点爆炸圈虚读，让"会炸"可以被提前读到
+      ctx.strokeStyle = b.hue;
+      ctx.globalAlpha = 0.14;
+      ctx.lineWidth = 2;
+      ctx.setLineDash([8, 10]);
+      ctx.beginPath(); ctx.arc(b.x, b.y, b.boomR, 0, TAU); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.lineCap = "round";
+      ctx.globalAlpha = 0.30;
+      ctx.lineWidth = b.r * 1.4;
+      ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(b.x - b.vx * 0.10, b.y - b.vy * 0.10); ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = b.hue;
+      ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.fill();
+      ctx.fillStyle = "#eaf7ff";
+      ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 0.45, 0, TAU); ctx.fill();
+      return;
+    }
     if (b.shape === "qi") {                                     // 第 72 项丙：月牙剑气。弧半径 1.1r／圆心后移 0.5r／半角 50°／笔宽 0.26r
       ctx.save();                                               // ⇒ 尖端最远绘制点 0.997·r，整条刀身严格包在判定圆里，不重犯"画过去了但不结算"
       ctx.translate(b.x, b.y);
@@ -4236,6 +4305,22 @@ function drawBullets() {
         ctx.fillStyle = "rgba(111,227,208,0.16)";
         ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 1.5, 0, TAU); ctx.fill();
       }
+      return;
+    }
+    if (b.kind === "cannon") {                       // 光炮：慢速炮弹＋双层尾迹＋白心
+      ctx.lineCap = "round";
+      ctx.strokeStyle = b.hue;
+      ctx.globalAlpha = 0.22;                        // 外层宽尾迹
+      ctx.lineWidth = b.r * 1.6;
+      ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(b.x - b.vx * 0.16, b.y - b.vy * 0.16); ctx.stroke();
+      ctx.globalAlpha = 0.38;                        // 内层贴身尾迹
+      ctx.lineWidth = b.r * 0.9;
+      ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(b.x - b.vx * 0.09, b.y - b.vy * 0.09); ctx.stroke();
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = b.hue;
+      ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, TAU); ctx.fill();
+      ctx.fillStyle = "rgba(255,255,255,0.9)";
+      ctx.beginPath(); ctx.arc(b.x, b.y, b.r * 0.45, 0, TAU); ctx.fill();
       return;
     }
     ctx.strokeStyle = b.hue;
@@ -4620,6 +4705,17 @@ function drawTouchUI() {
       ctx.fill();
       ctx.strokeStyle = "rgba(255,154,92,0.3)";
       ctx.stroke();
+    } else if (w.kind === "cannon") {                    // 光炮预览：6 格直线＋终点爆炸圈，半径与结算同源（CFG.weapons.cannon.boomR）
+      ctx.strokeStyle = "rgba(192,160,255,0.30)";
+      ctx.beginPath();
+      ctx.moveTo(player.x, player.y);
+      const cx = player.x + Math.cos(a) * w.range, cy = player.y + Math.sin(a) * w.range;
+      ctx.lineTo(cx, cy);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.strokeStyle = "rgba(192,160,255,0.40)";
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(cx, cy, w.boomR, 0, TAU); ctx.stroke();
     } else {
       ctx.strokeStyle = "rgba(255,215,106,0.26)";
       ctx.beginPath();
@@ -4792,12 +4888,12 @@ function drawPickPanel() {
   const isRelic = G.pick.kind === "relic";
   ctx.fillStyle = "#fff";
   ctx.font = "700 22px system-ui,sans-serif";
-  ctx.fillText(isWeapon ? "初始武器三选一 · 局内不可更换"
+  ctx.fillText(isWeapon ? "初始武器" + ({ 3: "三", 4: "四", 5: "五" }[CFG.weaponOrder.length] || CFG.weaponOrder.length) + "选一 · 局内不可更换"
     : isRelic ? "遗器三选一 · 全局仅这一次" : "刻印三选一 · 安全期", vw / 2, p.y + 30);
   ctx.font = "500 12px system-ui,sans-serif";
   ctx.fillStyle = "rgba(255,255,255,0.5)";
   ctx.fillText(isWeapon
-    ? "首局推荐：环刃·残响（中距离往返穿透）    点卡片或按 1 / 2 / 3"
+    ? "首局推荐：环刃·残响（中距离往返穿透）    点卡片或按 1 / 2 / 3 / 4"
     : isRelic ? "选中后永久持有到本局结束，攻击键正上方的大招键释放（键盘 X）"
     : "被动不占槽可叠层；主动占槽不可重复；槽满时池内不再出现新主动", vw / 2, p.y + 54);
 
@@ -5014,6 +5110,7 @@ window.__game = {
   reset, resize, damagePlayer, tryFire, castSlot, gainSeal, openPick, pickTapIndex, validateContent,   // 第 30 项：填表期要能在测试里注入错误种类复现报错
   killEnemy, materialize,                                       // 第18项复测要能直接击杀一只怪
   unitDef, curBoss, levelHp, damageEnemy, spawnShot,             // 4b-1 验收：按角度打正面／背后、造弹、读表
+  fireCopy,                                                      // 光炮复制体爆炸：测试面要能直接开火
   spawnSummon, splitOnDeath, originalAlive, clearSummons, pullToward, faceToward,   // 第 32~34 项口径要能在测试里直接驱动
   MAX_SUMMON_PER_OWNER, MAX_ACTIVE_TOTAL,
   sealChoices, weaponCd, attackPower, moveSpeed, scaleAtk, sealLv, activeSlots, hasSeal,   // moveSpeed 是批次4b-3 第 76 项才接出来的：吸的是两条乘区，测试面必须两条都能读
