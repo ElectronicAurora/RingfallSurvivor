@@ -301,8 +301,8 @@ const CFG = {
       ai: "boss", warnText: "渊喉",
       loop: 1.6,                    // 第 54 项 B：真正的节拍器是这个共享闸门，不是下面那两个 cd（2.2／2.8 只是下限）
       skills: [
-        { kind: "fan", windup: 0.5, cd: 2.2, n: 5, spread: 34 * DEG, speed: 325, r: 16, pct: 0.08 },   // v4.20 他直接数：boss2-5 弹速 ×1.25（260→325）
-        { kind: "column", windup: 1.0, cd: 2.8, speed: 475, r: 34, pct: 0.22, len: 1500 },            // v4.20 ×1.25（380→475）；齐射读同一张表，自动跟随
+        { kind: "fan", windup: 0.5, cd: 2.2, n: 9, spread: 34 * DEG, speed: 325, r: 16, pct: 0.08 },   // v4.23 他直接数：扇形弹 5→9 发
+        { kind: "column", windup: 0.5, cd: 2.8, speed: 600, r: 68, pct: 0.22, len: 1500 },            // v4.23 他直接数：半径翻倍 34→68、前摇 1.0→0.5s、弹速 475→600
       ],
       volleyCd: 6,                                         // 半血后双头齐射：实测间隔约 12 秒（不低于单头周期，第 55 项 A 按实测落档）
       halfWarn: 0.8, halfText: "渊喉 · 涌潮",
@@ -324,9 +324,9 @@ const CFG = {
       loop: 1.2,                                                  // 成对周期 4.60 秒＝2.15 秒硬直前摇 ＋ 2×1.2 秒 track 等待
       skills: [
         { kind: "column", windup: 0.6, cd: 2.4, blink: 240, speed: 700, r: 40, pct: 0.18, len: 1500, hue: "#ff7a94", particle: "#ffc2d0" },   // cd 2.4 是"不再 binding"的边界值，再低读数不变（实测 cd 1.8 一档＝4.58 秒）；v4.20 他直接数弹速 ×1.25（560→700）
-        { kind: "fan", shape: "qi", windup: 0.35, cd: 1.8, n: 9, spread: 210 * DEG, speed: 700, r: 28, pct: 0.055, hue: "#ffb3c6" },          // v4.20 ×1.25（560→700）
+        { kind: "fan", shape: "qi", windup: 0.35, cd: 1.8, n: 9, spread: 210 * DEG, speed: 700, r: 28, pct: 0.08, hue: "#ffb3c6" },          // v4.23 他直接数：剑气扇伤害 5.5%→8%
       ],
-      skills2: [{ kind: "charge", windup: 0.6, cd: 4.0 }],      // 半血后新增的"突进"这一手，沿用现通道那对 charge 参数
+      skills2: [{ kind: "charge", windup: 0.4, cd: 4.0 }],      // v4.23 他直接数：冲刺前摇 0.6→0.4s
       halfKind: "ring", halfWarn: 0.8, halfText: "刹那 · 剑域",  // 第 64 项 A：不召唤，所以绝不掉进 else 那支
       ringN: 12, ringSpeed: 300, ringR: 26, ringPct: 0.05, ringShape: "qi",   // v4.20 他直接数弹速 ×1.25（240→300）
       // 判据三 v4.12 新口径（弹道变宽后 2r 不再是零）：自由通道 ＝ d·Δθ − 2r ≥ 2×玩家有效半径 ＝ 54.4px
@@ -344,8 +344,8 @@ const CFG = {
       r: 90, speed: 80, warning: 1.2, contactPct: 0.12, xp: 0, color: "#d8c47f",
       ai: "boss", warnText: "胎渊",
       loop: 2.6,
-      skills: [{ kind: "gap", windup: 0.8, cd: 4.0, n: 36, leave: 0, speed: 450, r: 18, pct: 0.15, hue: "#f2d98d", burst: 2, burstGap: 0.3 }],   // v4.23 他直接数：不留缺口／36发／0.3s连发两次／弹速450／伤害15%／CD减1/3（6→4）
-      skills2: [{ kind: "gap", windup: 0.8, cd: 10/3, n: 36, leave: 0, speed: 450, r: 18, pct: 0.15, hue: "#f2d98d", burst: 2, burstGap: 0.3, pull: 150, pullR: 1200 }],   // v4.23 同P1＋CD 5→10/3；pull不变
+      skills: [{ kind: "gap", windup: 0.8, cd: 4.0, n: 36, leave: 0, speed: 450, r: 18, pct: 0.15, hue: "#f2d98d", burst: 2, burstGap: 0.65 }],   // v4.23 他直接数：不留缺口／36发／0.3s连发两次／弹速450／伤害15%／CD减1/3（6→4）
+      skills2: [{ kind: "gap", windup: 0.8, cd: 10/3, n: 36, leave: 0, speed: 450, r: 18, pct: 0.15, hue: "#f2d98d", burst: 2, burstGap: 0.65, pull: 150, pullR: 1200 }],   // v4.23 同P1＋CD 5→10/3；pull不变
       halfWarn: 0.8, halfKind: "gap", halfText: "胎渊 · 星隙",
       vortexN: 2, vortexR: 280, vortexPull: 120, vortexLife: 10, vortexP1: true, vortexDot: 0.04,   // v4.23 他直接数：半径230→280、内部持续伤害4%/s、位置移到场内
       summon: { key: "stardust", n: 3 },           // P1 起手一批 3 只、不补召（换算器 E 段：补召会让"清层"在任何 CD 上都劣于"别管它"）
@@ -364,15 +364,16 @@ const CFG = {
       skills: [
         // 第 98 项乙：n24 留 6 ⇒ 判据【夹逼】下界 125.3 ＜ updateBoss 那句写死的 150 ⇒ BOSS 天然站位处就有解
         // （@150 缝半宽 27.7° vs 梁禁半角 20.3°，余 7.4°）；@150 空弧 435.2px＝判据【弹隙】线 81.6 的 5.3 倍
-        { kind: "gap", windup: 0.8, cd: 6.0, n: 36, leave: 0, speed: 450, r: 18, pct: 0.15, hue: "#cfe9ff", burst: 2, burstGap: 0.3 },   // v4.23 他直接数：不留缺口／36发／0.3s连发两次／弹速450／伤害15%
-        { kind: "charge", windup: 0.8, cd: 5.0 },
-        { kind: "beam", windup: 0.6, cd: 7.0, n: 2, spin: 45 * DEG, w: 26, len: 900, pct: 0.10, hue: "#cfe9ff", life: 8.0 },   // v4.23 他直接数：改两束、45°/s正反转（原 n1 spin36）
+        { kind: "gap", windup: 0.8, cd: 6.0, n: 36, leave: 0, speed: 450, r: 18, pct: 0.15, hue: "#cfe9ff", burst: 2, burstGap: 0.65 },   // v4.23 他直接数：不留缺口／36发／0.3s连发两次／弹速450／伤害15%
+        { kind: "charge", windup: 0.4, cd: 5.0 },   // v4.23 他直接数：冲刺前摇 0.8→0.4s
+        { kind: "beam", windup: 0.6, cd: 7.0, n: 2, spin: 90 * DEG, w: 26, len: 900, pct: 0.10, hue: "#cfe9ff", life: 8.0 },   // v4.23 他直接数：改两束、45°/s正反转（原 n1 spin36）
       ],
       // P3＝弹幕加速＋环缩＋梁仍在场（判据【夹逼】要求缝与梁同场）。v4.20 他直接数弹速 ×1.25 ⇒ speed 325（原 260＝撼地者环弹同档，×1.25 后不再同档）；
       // cd 5.0＝胎渊 P2 同档不变；n／leave／r／pct 一律不动 ⇒ 缝宽与单发伤害逐字不变。梁随 P1 同改 36°/s／10%。
       skills2: [
-        { kind: "gap", windup: 0.8, cd: 5.0, n: 36, leave: 0, speed: 500, r: 18, pct: 0.15, hue: "#cfe9ff", burst: 2, burstGap: 0.3 },   // v4.23 同P1＋末环P3加速到500
-        { kind: "beam", windup: 0.6, cd: 7.0, n: 2, spin: 45 * DEG, w: 26, len: 900, pct: 0.10, hue: "#cfe9ff", life: 8.0 },   // v4.23 同 P1
+        { kind: "gap", windup: 0.8, cd: 5.0, n: 36, leave: 0, speed: 500, r: 18, pct: 0.15, hue: "#cfe9ff", burst: 2, burstGap: 0.65 },   // v4.23 同P1＋末环P3加速到500
+        { kind: "charge", windup: 0.4, cd: 5.0 },   // v4.23 他直接数：P3 也冲刺（同 P1）
+        { kind: "beam", windup: 0.6, cd: 7.0, n: 2, spin: 90 * DEG, w: 26, len: 900, pct: 0.10, hue: "#cfe9ff", life: 8.0 },   // v4.23 同 P1
       ],
       halfWarn: 0.8, halfKind: "shrink", halfText: "末环 · 终焉收缩",
       summon: { key: "watcherWeak", n: 4 },          // P1 起手一批 4 只、不补召；4 只刚好顶满 MAX_SUMMON_PER_OWNER
