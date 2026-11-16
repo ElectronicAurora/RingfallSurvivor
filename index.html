@@ -301,7 +301,7 @@ const CFG = {
       ai: "boss", warnText: "渊喉",
       loop: 1.6,                    // 第 54 项 B：真正的节拍器是这个共享闸门，不是下面那两个 cd（2.2／2.8 只是下限）
       skills: [
-        { kind: "fan", windup: 0.5, cd: 2.2, n: 9, spread: 34 * DEG, speed: 325, r: 16, pct: 0.08 },   // v4.23 他直接数：扇形弹 5→9 发
+        { kind: "fan", windup: 0.5, cd: 2.2, n: 9, spread: 34 * DEG, speed: 650, r: 16, pct: 0.08 },   // v4.23 他直接数：扇形弹 5→9 发、弹速翻倍 325→650
         { kind: "column", windup: 0.5, cd: 2.8, speed: 600, r: 68, pct: 0.22, len: 1500 },            // v4.23 他直接数：半径翻倍 34→68、前摇 1.0→0.5s、弹速 475→600
       ],
       volleyCd: 6,                                         // 半血后双头齐射：实测间隔约 12 秒（不低于单头周期，第 55 项 A 按实测落档）
@@ -4703,7 +4703,8 @@ function drawHUD() {
 
   // 已获刻印条（第六章：被动叠层 / 主动占槽）
   let sx = bx;
-  const sy = by + 76;
+  let sy = by + 76;
+  const sealRight = vw - SAFE.r - 18;                  // v4.23 甲：全安全区宽＋超宽换行（原 45% 截断会丢章）
   ctx.font = "600 12px system-ui,sans-serif";
   ctx.textAlign = "left";
   for (const s of SEALS) {
@@ -4711,6 +4712,7 @@ function drawHUD() {
     if (lv <= 0) continue;
     const label = s.name + (s.type === "passive" && lv > 1 ? "×" + lv : "");
     const wgt = ctx.measureText(label).width + 14;
+    if (sx + wgt > sealRight && sx > bx) { sx = bx; sy += 26; }
     ctx.fillStyle = "rgba(10,14,26,0.7)";
     roundRect(sx, sy, wgt, 20, 6); ctx.fill();
     ctx.strokeStyle = s.color;
@@ -4719,7 +4721,6 @@ function drawHUD() {
     ctx.fillStyle = s.color;
     ctx.fillText(label, sx + 7, sy + 10);
     sx += wgt + 6;
-    if (sx > SAFE.l + (vw - SAFE.l - SAFE.r) * 0.45) break;
   }
   if (hasSeal(12)) {
     ctx.fillStyle = "rgba(203,184,154,0.8)";
