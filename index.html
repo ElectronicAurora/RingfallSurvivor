@@ -366,25 +366,28 @@ const CFG = {
       key: "termina", name: "终焉之环【末环】", tier: "boss", weight: "boss",
       r: 90, speed: 110, warning: 1.2, contactPct: 0.12, xp: 0, color: "#dfe9f5",   // v4.20 他直接数：移速 80→110（追击仍慢于玩家 300；冲锋 chargeSpeed 900 是本体位移，不在弹速 ×1.25 里）
       ai: "boss", warnText: "末环",
-      loop: 2.6,
+      loop: 1.6,                                     // v4.25 他选的 A 档：2.6→1.6（与渊喉同档）。三手 cd 6.0/5.0/7.0 全都不 binding ⇒ 改 cd 无效，真正的节拍器是 loop＋轮转
       skills: [
         // 第 98 项乙：n24 留 6 ⇒ 判据【夹逼】下界 125.3 ＜ updateBoss 那句写死的 150 ⇒ BOSS 天然站位处就有解
         // （@150 缝半宽 27.7° vs 梁禁半角 20.3°，余 7.4°）；@150 空弧 435.2px＝判据【弹隙】线 81.6 的 5.3 倍
-        { kind: "gap", windup: 0.8, cd: 6.0, n: 36, leave: 0, speed: 450, r: 18, pct: 0.15, hue: "#cfe9ff", burst: 2, burstGap: 0.65 },   // v4.23 他直接数：不留缺口／36发／0.3s连发两次／弹速450／伤害15%
+        // v4.25：windup 0.8→0.6、recover 0.7→0.5（新增表字段）、stagger 让第二轮整体错半格 ⇒ 第一轮的缝心正对第二轮弹心
+        { kind: "gap", windup: 0.6, cd: 6.0, n: 36, leave: 0, speed: 450, r: 18, pct: 0.15, hue: "#cfe9ff", burst: 2, burstGap: 0.65, recover: 0.5, stagger: true },
         { kind: "charge", windup: 0.4, cd: 5.0 },   // v4.23 他直接数：冲刺前摇 0.8→0.4s
-        { kind: "beam", windup: 0.6, cd: 7.0, n: 2, spin: 90 * DEG, w: 26, len: 900, pct: 0.10, hue: "#cfe9ff", life: 8.0 },   // v4.23 他直接数：改两束、45°/s正反转（原 n1 spin36）
+        { kind: "beam", windup: 0.6, cd: 7.0, n: 2, spin: 90 * DEG, w: 26, len: 900, pct: 0.10, hue: "#cfe9ff", life: 9.0 },   // v4.25 时限 8→9s：轮转 9.05s ⇒ 梁在场率 100%
       ],
       // P3＝弹幕加速＋环缩＋梁仍在场（判据【夹逼】要求缝与梁同场）。v4.20 他直接数弹速 ×1.25 ⇒ speed 325（原 260＝撼地者环弹同档，×1.25 后不再同档）；
-      // cd 5.0＝胎渊 P2 同档不变；n／leave／r／pct 一律不动 ⇒ 缝宽与单发伤害逐字不变。梁随 P1 同改 36°/s／10%。
+      // v4.25 P3 与 P1 同步：前摇 0.6、recover 0.5、错格连发、梁 9s。cd 5.0 仍是死数（轮转 9.05 ＞ 5.0）。
       skills2: [
-        { kind: "gap", windup: 0.8, cd: 5.0, n: 36, leave: 0, speed: 500, r: 18, pct: 0.15, hue: "#cfe9ff", burst: 2, burstGap: 0.65 },   // v4.23 同P1＋末环P3加速到500
+        { kind: "gap", windup: 0.6, cd: 5.0, n: 36, leave: 0, speed: 500, r: 18, pct: 0.15, hue: "#cfe9ff", burst: 2, burstGap: 0.65, recover: 0.5, stagger: true },
         { kind: "charge", windup: 0.4, cd: 5.0 },   // v4.23 他直接数：P3 也冲刺（同 P1）
-        { kind: "beam", windup: 0.6, cd: 7.0, n: 2, spin: 90 * DEG, w: 26, len: 900, pct: 0.10, hue: "#cfe9ff", life: 8.0 },   // v4.23 同 P1
+        { kind: "beam", windup: 0.6, cd: 7.0, n: 2, spin: 90 * DEG, w: 26, len: 900, pct: 0.10, hue: "#cfe9ff", life: 9.0 },   // v4.25 同 P1
       ],
       halfWarn: 0.8, halfKind: "shrink", halfText: "末环 · 终焉收缩",
       summon: { key: "watcherWeak", n: 4 },          // P1 起手一批 4 只、不补召；4 只刚好顶满 MAX_SUMMON_PER_OWNER
-      shrinkFloor: 93.4, shrinkEvery: 30,            // 第 97 项甲：面积 70% ⇒ 等距内缩 I＝93.4；第 108 项甲：从 P3 起手起算 ⇒ 段内 1 次
-      chargeWindup: 0.8, chargeW: 100, chargeLen: 700, chargeSpeed: 900,
+      // v4.25 阶梯两档＋15 秒节拍：93.4（面积 70%）⇒ 140（面积 36.3%，玩家 r32 的 cr 只剩 8px）。P3 段 22.5 秒 ⇒ 两档都兑现。
+      // 140 是几何上限下的安全值：inset 超过 180−r 圆角就消失，玩家 r32 ⇒ 上限 148，取 140 留 8px 余量。
+      shrinkFloor: [93.4, 140], shrinkEvery: 15,
+      chargeWindup: 0.8, chargeW: 100, chargeLen: 900, chargeSpeed: 900,   // v4.25 他选的：700→900（封掉"站在冲锋尽头"）
       chargePct: 0.16, chargeRetreat: 200, chargeRecover: 0.4,
       coreDeg: 120 * DEG, coreMult: 1.3,
     },
@@ -505,7 +508,7 @@ const SEALS = [
   { id: 10, name: "御灵", type: "active", cd: 15, color: "#5fd97a",
     desc: "近处召巨兽（近战 AOE），远处召游侠（远程），持续 10 秒" },
   { id: 11, name: "点染", type: "passive", max: 1, color: "#b48cff",
-    desc: "30% 概率附元素：红燃烧／蓝减速冰冻／黄闪电链" },
+    desc: "三色各 30% 独立触发：红燃烧／蓝减速冰冻／黄闪电链" },
   { id: 12, name: "尘梦", type: "passive", max: 1, color: "#cbb89a",
     desc: "每秒 1 层【尘】上限 20，每层 1% 减伤 +1% 攻击，满层起风暴" },
   { id: 13, name: "盈箧", type: "passive", max: 1, color: "#ffd166",
@@ -537,7 +540,8 @@ const SEAL_BY_ID = Object.create(null);
 for (const s of SEALS) SEAL_BY_ID[s.id] = s;
 
 // 被动触发限频（第五章第 3 节、第六章表注）：按时间不按次，与攻速解耦
-const GATE = { 裂帛: 0.3, 点染: 0.5, 狂骨: 0.25, 归墟: 1.0, 从者: 0.5, 燃灯: 0.5, 风暴: 0.5, 淬刃: 2.0, 垣垒: 10.0 };
+// v4.24 点染拆成三个独立窗口：一色触发不再挤掉另外两色，每色跑自己的 0.5 秒节拍
+const GATE = { 裂帛: 0.3, 点染红: 0.5, 点染蓝: 0.5, 点染黄: 0.5, 狂骨: 0.25, 归墟: 1.0, 从者: 0.5, 燃灯: 0.5, 风暴: 0.5, 淬刃: 2.0, 垣垒: 10.0 };
 
 /* ---------------- 遗器数据层（第七章第 2 节，6 件实装数值） ---------------- */
 
@@ -704,6 +708,7 @@ const newEnemy = () => ({
   linkT: 0, linkPct: 0, linkX: 0, linkY: 0, linkN: 0,    // 批次4b-3 第 77 项：链接减伤计时与链线另一端
   shield: 0,                                             // 第 78 项：比例盾的层，挂在召唤物身上
   laneCd: null, summonCd: 0,                             // 批次4b-3：交叉弹网的逐路计时（判据一）与周期召唤计时（第 81 项乙）
+  gateT: new Array(8).fill(0),                           // v4.26 每目标限频槽（PT_IDX 的 8 个键）：池化对象必须整条复位，否则上一只的窗口会串给下一只
 });
 const newAlly = () => ({
   active: false, kind: "turret", x: 0, y: 0, r: 20, t: 0, life: 0, ang: 0,
@@ -773,8 +778,10 @@ const G = {
   arenaInset: 0,                 // 批次4b-4 新原语三：环缩的当前等距内缩量（px）。四个判定读者与 arenaPath 共用这一个值
   shrinkOn: false,               // 末环 P3 起手置真，此后每 shrinkEvery 秒强制一次（第 108 项甲：从 P3 起算）
   shrinkT: 0,
-  shrinkFloor: 0,                // 本次环缩的地板（px），由 def.shrinkFloor 写入
-  shrinkEvery: 30,               // 强制环缩的节拍（秒），由 def.shrinkEvery 写入
+  shrinkSteps: null,             // v4.25 阶梯：def.shrinkFloor 是数组时按档兑现（末环 [93.4, 140]），单值时退化成只有一档
+  shrinkStep: 0,                 // 已兑现到第几档
+  shrinkOwner: null,             // 每次收缩都从宿主当前位置放一圈环弹 ⇒ 需要实体引用，由 startShrink 写入
+  shrinkEvery: 15,               // 强制环缩的节拍（秒），由 def.shrinkEvery 写入
 };
 
 const player = {
@@ -798,10 +805,27 @@ const sealLv = (id) => G.owned[id] || 0;
 const hasSeal = (id) => sealLv(id) > 0;
 
 function gate(name) {                        // 内置 CD：按时间不按次
-  const gap = GATE[name];
+  const gap = GATE[name] ?? 0.5;             // 兜底：GATE 漏登记时 gap 会是 undefined ⇒ elapsed < NaN 恒为 false，限频静默失效
   const next = G.gate[name] || 0;
   if (G.elapsed < next) return false;
   G.gate[name] = G.elapsed + gap;
+  return true;
+}
+
+/* v4.26：8 个"门写在多目标循环里"的被动改成每目标独立窗口。
+   旧版它们共用 G.gate 一张表 ⇒ 一个窗口只能兑现给第一个通过判定的目标（谁吃取决于 enemies 池序），
+   对群时总输出被"每窗口 1 次"封死、与目标数无关；且 BOSS 带着召唤物时常常抢不到自己的那一次。
+   现在账本从"全局一张"变成"每实体一张"（e.gateT），语义不变：仍是 G.elapsed 绝对时间戳、通过即消耗。
+   剩下三个（风暴／淬刃／垣垒）门在循环外，一次触发本就该打全场，继续走 gate()。 */
+const PT_IDX = { 裂帛: 0, 点染红: 1, 点染蓝: 2, 点染黄: 3, 从者: 4, 归墟: 5, 狂骨: 6, 燃灯: 7 };
+
+function gatePerTarget(name, e) {
+  const i = PT_IDX[name];
+  // 漏登记时退回全局门（行为等同 v4.25），不要静默变成"每次都通过"——那会把限频彻底废掉
+  if (i === undefined || !e || !e.gateT) return gate(name);
+  const gap = GATE[name] ?? 0.5;
+  if (G.elapsed < e.gateT[i]) return false;
+  e.gateT[i] = G.elapsed + gap;
   return true;
 }
 
@@ -1413,23 +1437,23 @@ function relicHit(e, dmg, opt) {
 function onHitPassives(e, opt) {
   const gateKey = opt.ally ? "从者" : null;
   if (gateKey) {
-    if (gate("从者")) {                                  // 召唤物·残影·炮台统一 0.5 秒限频
+    if (gatePerTarget("从者", e)) {                       // 召唤物·残影·炮台：每目标 0.5 秒限频
       if (hasSeal(9)) addBleed(e);
-      if (hasSeal(11) && Math.random() < 0.3) applyElement(e);
+      if (hasSeal(11)) rollElements(e);                  // 三色的 30% 与各自窗口都在 rollElements 内部
     }
   } else {
-    if (hasSeal(9) && gate("裂帛")) addBleed(e);
-    if (hasSeal(11) && gate("点染") && Math.random() < 0.3) applyElement(e);
+    if (hasSeal(9) && gatePerTarget("裂帛", e)) addBleed(e);
+    if (hasSeal(11)) rollElements(e);                    // v4.24：gate 移到概率之后逐色判 —— 掷骰失败不再白白吃掉 0.5 秒窗口
   }
-  if (hasSeal(16) && gate("归墟")) {                     // 削当前生命 0.5% 真伤，每秒 1 次
+  if (hasSeal(16) && gatePerTarget("归墟", e)) {          // 削当前生命 0.5% 真伤，每目标每秒 1 次
     let d = e.hp * 0.005;
     if (e.def.tier !== "mob") d = Math.min(d, attackPower() * 3);
     damageEnemy(e, d, { trueDmg: true, noPassives: true, label: "归墟" });
   }
-  if (opt.basic && hasSeal(15) && gate("狂骨")) {        // 普攻附加 20% 攻击真伤，不触发裂帛/点染
+  if (opt.basic && hasSeal(15) && gatePerTarget("狂骨", e)) {   // 普攻附加 20% 攻击真伤，不触发裂帛/点染
     damageEnemy(e, attackPower() * 0.2, { trueDmg: true, noPassives: true });
   }
-  if (opt.basic && player.hasteT > 0 && gate("燃灯")) {  // ⑲燃灯：普攻额外 15% 攻击真伤
+  if (opt.basic && player.hasteT > 0 && gatePerTarget("燃灯", e)) {   // ⑲燃灯：普攻额外 15% 攻击真伤
     damageEnemy(e, attackPower() * 0.15, { trueDmg: true, noPassives: true });
   }
 }
@@ -1439,16 +1463,26 @@ function addBleed(e) {
   e.bleedT = 3;                                          // 每层持续 3 秒，叠层刷新
 }
 
-function applyElement(e) {
-  const roll = Math.random();
-  if (roll < 0.34) {                                     // 红：燃烧
+/* v4.24 三色独立掷骰：每次命中红／蓝／黄各掷 30%，各有自己的 0.5 秒窗口。
+   与旧版的两处语义差——
+   ① gate 放在 random 之后：掷骰失败不消耗窗口（旧版失败也吃 0.5 秒 ⇒ 等效 1.67 秒才出一次元素，且堆攻速完全无效）；
+   ② 三色不再互斥：旧版一次 roll 三选一，现在同帧可以双色甚至三色齐出（红＋蓝同帧 = 烧着减速）。 */
+function rollElements(e) {
+  if (Math.random() < 0.3 && gatePerTarget("点染红", e)) {   // 红：燃烧
     e.burnT = 3;
-  } else if (roll < 0.67) {                              // 蓝：减速叠层冰冻
+  }
+  if (Math.random() < 0.3 && gatePerTarget("点染蓝", e)) {   // 蓝：减速叠层冰冻
     e.slow = Math.min(3, e.slow + 1);
     // 层持续取 6 秒：2 秒时叠不满 3 层，实测只有 0.5 次/分冰冻，等于没有这个分支
     e.slowT = 6;
-    if (e.slow >= 3) { e.frozen = 0.8; e.slow = 0; }
-  } else {                                               // 黄：闪电链弹射 3 目标
+    if (e.slow >= 3) {
+      // 冰冻时长分档：小怪 0.8 s，精英与 BOSS 一律 0.4 s。
+      // 三色独立后蓝的触发率翻了三倍，BOSS 若沿用 0.8 s 会变成每三秒停一次（定身期间 updateBoss 整段 return，连旋转梁都不转）
+      e.frozen = e.def.tier === "mob" ? 0.8 : 0.4;
+      e.slow = 0;
+    }
+  }
+  if (Math.random() < 0.3 && gatePerTarget("点染黄", e)) {   // 黄：闪电链弹射 3 目标
     chainLightning(e, 3);
   }
 }
@@ -1801,6 +1835,7 @@ function initEnemy(e, def, x, y) {
   e.fallArmed = false;                                   // 刚落地时离边界只有 inset−r，先把"可坠落"关掉
   e.fuse = 0; e.fuseFull = 0;                            // 爆壳球起爆倒计时
   e.bleed = 0; e.bleedT = 0; e.bleedTick = 0; e.burnT = 0; e.burnTick = 0;
+  e.gateT.fill(0);                                       // v4.26：每目标限频槽随实体复位（池化复用），不清会让新怪继承上一只的窗口
   e.slow = 0; e.slowT = 0; e.slowHard = 0; e.slowHardT = 0;
   e.frozen = 0; e.root = 0; e.stun = 0; e.vuln = 0; e.vulnT = 0;
   e.mark = 0; e.armorBreak = 0; e.crit = 0;
@@ -1941,6 +1976,7 @@ function bossCleared() {                                   // 第九章：BOSS �
   const name = curBoss().name;
   eBullets.clear();
   clearSummons();                                        // 第 32 项(2)：BOSS 半血召唤的那一批同样在波末清除
+  resetShrink();                                         // v4.25：末环死时把擂台还原，否则结算面板背后的场地仍是缩进状态（且周期项在 safe 里还会继续走）
   sweepOrbs();                                           // 第18项：BOSS 死亡同样把满屏掉落当场结算
   if (G.levelIndex >= CFG.levels.length - 1) {                             // 第五章：第 5 关 BOSS 死后单局结算
     G.mode = "cleared";
@@ -3034,7 +3070,7 @@ function updateBoss(e, wdt) {
         e.skills = def.skills2;
         e.skillCd = def.skills2.map((s) => s.cd * 0.5);
         e.skillIdx = 0;
-        startShrink(def);
+        startShrink(def, e);
         addFloat(e.x, e.y - e.r - 20, def.halfText, "#cfe9ff", 28);
         return;
       default:                                              // "summon"：撼地者的半血崩裂三连砸，预警由 case "halfWarn" 承担
@@ -3108,9 +3144,14 @@ function updateBoss(e, wdt) {
       e.teleT -= wdt;
       if (e.teleT <= 0) { spawnVortices(e); e.tele = null; e.state = "track"; e.t = def.loop; }
       break;
-    case "gapBurst":                                       // v4.23：星隙连发第二弹
+    case "gapBurst":                                       // v4.23：星隙连发第二弹；v4.25：stagger ⇒ 整圈错半格
       e.t -= wdt;
-      if (e.t <= 0) { e.tele = { s: e.gapBurstS, dir: e.gapBurstDir }; bossGap(e); }
+      if (e.t <= 0) {
+        // 错半格不是改 dir（dir 只在 leave>0 时决定缺口位置，末环 leave＝0 ⇒ 改 dir 无效），
+        // 而是给发弹相位加 off：第一轮弹心在 i·dA、缝心在 (i+½)·dA，第二轮整体 +dA/2 ⇒ 弹心正好落在第一轮的缝心上。
+        e.tele = { s: e.gapBurstS, dir: e.gapBurstDir, off: e.gapBurstS.stagger ? TAU / e.gapBurstS.n / 2 : 0 };
+        bossGap(e);
+      }
       break;
     case "recover":
       e.t -= wdt;
@@ -3213,10 +3254,11 @@ function normCell(k, n) { return ((k % n) + n) % n; }
 function bossGap(e) {
   const s = e.tele.s, dA = TAU / s.n;
   const c = normCell(Math.round(e.tele.dir / dA), s.n);     // 第 85 项甲：tele.dir 来自 atan2，玩家在上方时恒负 ⇒ 不取模会把环绕距离算成负数、多删对面的格。同一个 c 在预警渲染里另有一份，两处必须同改
+  const off = e.tele.off || 0;                              // v4.25：整圈相位偏移（stagger 的第二轮用），缺口格号 c 仍按 dir 算 ⇒ 错格不影响缺口
   for (let i = 0; i < s.n; i++) {
     const dd = Math.min(Math.abs(i - c), s.n - Math.abs(i - c));
     if (dd * 2 < s.leave) continue;                        // 落在缺口里 ⇒ 这一格不发
-    spawnShot(e.x, e.y, i * dA, s.speed, s.r, s.pct, s.hue, false);
+    spawnShot(e.x, e.y, i * dA + off, s.speed, s.r, s.pct, s.hue, false);
   }
   if ((s.burst || 1) > 1 && !e.gapBurst) {                 // v4.23：0.3s 内连发两次
     e.gapBurst = true;
@@ -3227,7 +3269,7 @@ function bossGap(e) {
   }
   e.gapBurst = false;
   e.tele = null;
-  e.state = "recover"; e.t = 0.7;
+  e.state = "recover"; e.t = s.recover || 0.7;              // v4.25：recover 进表（末环给 0.5），胎渊不写走 0.7 默认，行为不变
 }
 
 // 第 64 项 C：刹那的剑域＝现成 ringN 四元组的一次环形弹，不召唤、不新增弹种
@@ -3419,23 +3461,42 @@ function applyShrink(floor) {
   clampInside(player, player.r);                           // 缩后玩家可能落在新边界外，当场夹回（第八章 1b：玩家永不坠崖）
 }
 
-function startShrink(def) {
+function startShrink(def, owner) {
   G.shrinkOn = true;
   G.shrinkT = 0;
-  G.shrinkFloor = def.shrinkFloor;
+  G.shrinkSteps = Array.isArray(def.shrinkFloor) ? def.shrinkFloor : [def.shrinkFloor];   // v4.25 阶梯：数组按档兑现，单值退化成只有一档
+  G.shrinkStep = 0;
+  G.shrinkOwner = owner || null;
   G.shrinkEvery = def.shrinkEvery;
-  applyShrink(def.shrinkFloor);                            // P3 起手那一次
+  shrinkTick();                                            // P3 起手那一档
   addFloat(player.x, player.y - 60, "终焉收缩", "#cfe9ff", 30);
+}
+
+// v4.25：每一档收缩都从宿主当前位置放一圈环弹——环缩从"背景"变成"事件"。
+// 相位固定（第 i 发恒在 i·dA），所以每一档落在同一个方位，玩家可以学；24 发 r16 在 R=400 处净缝 18.3px，R=300 处已实心 ⇒ 逼走位而不是逼硬吃。
+const SHRINK_BURST = { n: 24, speed: 300, r: 16, pct: 0.06, hue: "#cfe9ff" };
+
+function shrinkTick() {
+  if (!G.shrinkSteps || G.shrinkStep >= G.shrinkSteps.length) return;
+  applyShrink(G.shrinkSteps[G.shrinkStep]);
+  G.shrinkStep++;
+  const o = G.shrinkOwner;
+  if (!o || o.hp <= 0) return;                             // 宿主已死（换波安全期里那一档）只缩不放弹
+  for (let i = 0; i < SHRINK_BURST.n; i++)
+    spawnShot(o.x, o.y, (i / SHRINK_BURST.n) * TAU, SHRINK_BURST.speed, SHRINK_BURST.r, SHRINK_BURST.pct, SHRINK_BURST.hue, false);
+  relicFx.push({ type: "burst", t: 0, dur: 0.6, r: 320, x: o.x, y: o.y, color: "#cfe9ff" });
+  addFloat(o.x, o.y - o.r - 16, "环缩", "#cfe9ff", 24);
 }
 
 function updateShrink(wdt) {
   if (!G.shrinkOn) return;
   G.shrinkT += wdt;
-  if (G.shrinkT >= G.shrinkEvery) { G.shrinkT -= G.shrinkEvery; applyShrink(G.shrinkFloor); }
+  if (G.shrinkT >= G.shrinkEvery) { G.shrinkT -= G.shrinkEvery; shrinkTick(); }
 }
 
 function resetShrink() {
   G.shrinkOn = false; G.shrinkT = 0; G.arenaInset = 0;
+  G.shrinkSteps = null; G.shrinkStep = 0; G.shrinkOwner = null;
 }
 
 // 第 30 项 A：def.ai → 行为函数的唯一映射，validateContent() 用它拒绝填错的种类
