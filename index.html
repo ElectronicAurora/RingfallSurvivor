@@ -566,16 +566,16 @@ const SEAL_DB = [
   /* ---- 掠影·踪（机动 / 绕背 / 闪避反打）---- */
   { id: "影-基石-凌波", legacyNum: 8,  name: "凌波", type: "passive", max: 2, color: "#6fe3d0", school: "影", role: "基石", frozen: true, channels: [],
     desc: "闪避率 +20%/层（闪避期望上限 40%）；闪避成功 +30% 移速 2 秒" },
-  { id: "影-输出-背袭", legacyNum: 0,  name: "背袭", type: "passive", max: 1, color: "#4b4453", school: "影", role: "输出", channels: [CH.DIRECT],
-    desc: "攻击来源落在敌人背面 120° 扇内伤害 +15%，与 BOSS 背后核心 ×1.3 乘算叠加" },
+  { id: "影-输出-影袭", legacyNum: 0,  name: "影袭", type: "passive", max: 1, color: "#4b4453", school: "影", role: "输出", req: ["影-生存-蹑景"], channels: [],
+    desc: "残影每次命中时，在槽的全部主动刻印剩余 CD −0.4 秒（0.3 秒限频；不碰遗器与被动）" },
   { id: "影-输出-影爆", legacyNum: 0,  name: "影爆", type: "passive", max: 1, color: "#4b4453", school: "影", role: "输出", req: ["影-生存-蹑景"], channels: [CH.EXPL],
     desc: "蹑景残影消失时爆炸：150 半径 60% 攻击（爆炸通道 noPassives）" },
   { id: "影-生存-蹑景", legacyNum: 7,  name: "蹑景", type: "active",  cd: 8, color: "#8ea2ff", school: "影", role: "生存", frozen: true, channels: [CH.SUMMON],
-    desc: "主动 8 秒：冲 250px、0.3 秒无敌、留 3 秒残影（50% 攻击）；影大共鸣：起跳瞬间 100 内有敌方弹幕、200 内有冲刺敌人，或激光即将扫到 ⇒ 规避成功，CD 刷新 + 大招 CD −2s" },
+    desc: "主动 8 秒：冲 250px、0.3 秒无敌、留 3 秒残影（50% 攻击）；影大共鸣：CD 缩短到 1 秒" },
   { id: "影-生存-虚步", legacyNum: 0,  name: "虚步", type: "passive", max: 1, color: "#4b4453", school: "影", role: "生存", req: ["影-基石-凌波"], channels: [],
     desc: "闪避成功时当次无敌帧 0.6 秒 → 0.9 秒；影小共鸣 0.9 → 1.2 秒（不设上限、不计入回归测试）" },
-  { id: "影-控制-诱影", legacyNum: 0,  name: "诱影", type: "passive", max: 1, color: "#4b4453", school: "影", role: "控制", req: ["影-生存-蹑景"], channels: [],
-    desc: "残影存在期间，300 内 mob/elite 的冲刺以残影为目标；BOSS 不转移仇恨" },
+  { id: "影-控制-影链", legacyNum: 0,  name: "影链", type: "passive", max: 1, color: "#4b4453", school: "影", role: "控制", req: ["影-生存-蹑景"], channels: [CH.DOT],
+    desc: "玩家与每道残影之间拉出影链（宽 44）：穿过的敌人减速 35%，并每秒受 10% 攻击的持续伤害（0.5 秒一跳，DOT 通道）" },
   { id: "影-控制-影缠", legacyNum: 0,  name: "影缠", type: "passive", max: 1, color: "#4b4453", school: "影", role: "控制", req: ["影-生存-蹑景"], channels: [],
     desc: "蹑景穿过敌人时定身 0.6 秒（每目标每 3 秒一次）；定身期间目标受伤 +10%" },
 
@@ -630,8 +630,8 @@ const RESONANCE_SCHOOLS = ["焚", "凛", "锋", "枢", "影", "垣"];
 
 // 被动触发限频（按时间不按次，与攻速解耦）。key 必须与刻印 name 逐字一致，否则 gate() 恒放行。
 // 注：裂帛、归墟已于 v0.3.4 改「每目标限频」（gatePerTarget），不再列在本表——本表只放全局共享计时器。
-const GATE = { 狂骨: 0.25, 从者: 0.5,
-               燃灯: 0.5, 风暴: 0.5, 淬刃: 2.0, 影共鸣: 1.0, 冰甲回复: 3 };
+const GATE = { 狂骨: 0.25,
+               燃灯: 0.5, 风暴: 0.5, 淬刃: 2.0, 影共鸣: 1.0, 冰甲回复: 3, 影袭: 0.3 };
 
 /* ---------------- 遗器数据层（第七章第 2 节，6 件实装数值） ---------------- */
 
@@ -867,7 +867,6 @@ const G = {
   relicRefund: 0,                // 七弦本次释放已减的 CD 秒数（单次上限 6 秒）
   relicRefundT: 0,               // 七弦减 CD 的 1 秒内置判定
   relicBossAcc: 0,               // 七弦本次释放对 BOSS 的累计伤害（每满 3% 最大生命减 1 秒）
-  niejingEvade: false,           // 蹑景起跳规避旗标（影大共鸣）：sealNiejing 写入、castSlot 消费后置蹑景 CD=0
   relicRefunded: false,          // 斩月本次释放是否已返还过
   bossWave: false,               // 当前正在打 BOSS
   afterBoss: false,              // BOSS 刚死，安全期结束后进入下一关
@@ -1349,8 +1348,11 @@ function bulletCollide(b) {
     if (b.hited.indexOf(e.id) >= 0) return;
     if (dist(b.x, b.y, e.x, e.y) >= b.r + e.r) return;
     b.hited.push(e.id);
-    // sx/sy 用玩家位置而不是弹丸位置：背后核心的判定口径是"攻击来源落在 BOSS 朝向的背面"
-    damageEnemy(e, b.dmg, { crit: true, basic: !b.ally, ally: b.ally, src: b, sx: player.x, sy: player.y,
+    // sx/sy：判定「攻击来源在哪」。玩家弹丸用玩家位置（背后核心的口径是"来源落在 BOSS 朝向的背面"）；
+    // 召唤物弹丸用**从者自己的位置**（b.sx/b.sy，由 allyAttack 写入）——炮台在背后打、玩家在正面时，
+    // 按炮台方位结算正面减伤/背后核心，才是几何上正确的那一次判定。
+    damageEnemy(e, b.dmg, { crit: true, basic: !b.ally, ally: b.ally, src: b,
+      sx: b.ally ? b.sx : player.x, sy: b.ally ? b.sy : player.y,
       knock: b.knock, kx: b.vx, ky: b.vy, channel: b.ally ? CH.SUMMON : CH.DIRECT });
     spawnParticle(b.x, b.y, rand(-80, 80), rand(-80, 80), 0.15, 3, b.hue);
     if (b.kind === "cannon") { cannonBoom(b); b.active = false; return; }   // 光炮：命中第一个目标即炸（pierce 0，直击 60 已在上面结算，爆炸 40 在 cannonBoom 里对同一目标补上）
@@ -1555,7 +1557,7 @@ const CHANNEL_RULES = {
   [CH.DIRECT]: { frontDR: 1, backCore: 1, vuln: 1, crit: 1, hooks: 1, knock: 1 },
   [CH.EXPL]:   { frontDR: 1, backCore: 1, vuln: 1, crit: 1, hooks: 0, knock: 0 },
   [CH.DOT]:    { frontDR: 0, backCore: 0, vuln: 1, crit: 0, hooks: 0, knock: 0 },
-  [CH.SUMMON]: { frontDR: 1, backCore: 0, vuln: 1, crit: 0, hooks: 0, knock: 0 },
+  [CH.SUMMON]: { frontDR: 1, backCore: 0, vuln: 1, crit: 0, hooks: 1, knock: 0 },   // hooks 1：召唤物命中也触发被动钩子（裂帛/绳墨/缠丝走 isSummon 分支，归墟不在此列）
 };
 
 function damageEnemy(e, raw, opt) {
@@ -1564,7 +1566,7 @@ function damageEnemy(e, raw, opt) {
   const R = CHANNEL_RULES[opt.channel || (opt.dot ? CH.DOT : CH.DIRECT)];
   let dmg = raw;
   if (opt.pct) dmg *= opt.pct;
-  // 乘区顺序按定稿排（正面减伤 → 背后核心 → 背袭 → 破甲／易伤 → 冰裂）：v4.8 撤掉地板后这一段全是纯乘法，
+  // 乘区顺序按定稿排（正面减伤 → 背后核心 → 破甲／易伤 → 冰裂）：v4.8 撤掉地板后这一段全是纯乘法，
   // 所以交换前后读数必然逐字相同——这条恒等式就是本项唯一的验收。
   if (R.frontDR && e.def.frontReduct && opt.sx !== undefined) {
     let da = Math.atan2(opt.sy - e.y, opt.sx - e.x) - e.ang;
@@ -1575,12 +1577,6 @@ function damageEnemy(e, raw, opt) {
     let da = Math.atan2(opt.sy - e.y, opt.sx - e.x) - e.ang;
     da = Math.atan2(Math.sin(da), Math.cos(da));
     if (Math.abs(da) > e.def.coreDeg) dmg *= e.def.coreMult;
-  }
-  // 背袭：背面 120° 扇内 +15%，与 BOSS 背后核心乘算（不取大）⇒ 对 BOSS 背后 ×1.15×1.3
-  if (hasSeal("影-输出-背袭") && opt.sx !== undefined && (!opt.channel || opt.channel === CH.DIRECT)) {
-    let da = Math.atan2(opt.sy - e.y, opt.sx - e.x) - e.ang;
-    da = Math.atan2(Math.sin(da), Math.cos(da));
-    if (Math.abs(da) > 60 * DEG) dmg *= 1.15;
   }
   if (e.linkT > 0) dmg *= 1 - e.linkPct;                    // 30% 链接减伤，真伤也吃（与正面减伤同侧）
   if (R.vuln && (!opt.trueDmg || opt.dot)) {                // DOT 吃易伤/破甲（附录 B1）
@@ -1645,11 +1641,11 @@ function relicHit(e, dmg, opt) {
 function onHitPassives(e, opt) {
   const isSummon = !!(opt.ally || opt.channel === CH.SUMMON);
   if (isSummon) {
-    if (gate("从者")) {                                  // 召唤物·残影·炮台统一 0.5 秒限频
-      if (hasSeal("锋-基石-裂帛")) addBleed(e);
-    }
+    // 裂帛：召唤物命中同样叠层，与玩家直击同口径「每目标 0.3 秒」。旧写法是全局 gate("从者") 0.5s，
+    // 在残影/炮台多源齐射下会把全场层数封顶在 2 层/秒，谁叠都叠不上去。
+    if (hasSeal("锋-基石-裂帛") && gatePerTarget(e.id, "裂帛", 0.3)) addBleed(e);
     if (hasSeal("枢-输出-绳墨")) addInk(e);              // 墨痕：召唤物命中附层（≤3）
-    // 缠丝：炮台/游侠子弹命中小怪定身 0.5 秒，每目标每 2 秒（跨来源共享 GATE）
+    // 缠丝：所有召唤物（炮台/游侠子弹、残影、巨兽近战、魅惑）命中小怪定身 0.5 秒，每目标每 2 秒
     if (hasSeal("枢-控制-缠丝") && e.def.tier === "mob" && gatePerTarget(e.id, "定身", 2)) applyRoot(e, 0.5);
   } else {
     // 百华：直击命中冰冻/减速敌人附加 50% 攻真伤，每目标 1 秒一次；先于叠层判定，按命中时的状态结算；
@@ -1665,12 +1661,13 @@ function onHitPassives(e, opt) {
     // 斩决：对生命 <25% 的精英造成直击伤害时定身 0.5 秒（每目标每 2 秒）
     if (hasSeal("锋-控制-斩决") && e.def.tier === "elite" && e.hp > 0 && e.hp / e.maxHp < 0.25
         && gatePerTarget(e.id, "定身", 2)) applyRoot(e, 0.5);
-  }
-  // 归墟：v0.3.4 改每目标限频（旧全局 1s = 每秒全场只结算一只，杂兵波几乎无贡献）
-  if (hasSeal("锋-输出-归墟") && gatePerTarget(e.id, "归墟", 1)) {          // 削当前生命 0.5% 真伤，每目标每秒 1 次
-    let d = e.hp * 0.005;
-    if (e.def.tier !== "mob") d = Math.min(d, attackPower() * 3);
-    damageEnemy(e, d, { trueDmg: true, noPassives: true, label: "归墟", channel: CH.DOT });
+    // 归墟：削当前生命 0.5% 真伤，每目标每秒 1 次。口径＝仅玩家直击——
+    // 召唤物一旦也削，残影洪流会把 BOSS 每秒削掉 3%，所以这一条必须留在非召唤物分支内。
+    if (hasSeal("锋-输出-归墟") && gatePerTarget(e.id, "归墟", 1)) {
+      let d = e.hp * 0.005;
+      if (e.def.tier !== "mob") d = Math.min(d, attackPower() * 3);
+      damageEnemy(e, d, { trueDmg: true, noPassives: true, label: "归墟", channel: CH.DOT });
+    }
   }
   if (opt.basic && hasSeal("锋-输出-狂骨") && gate("狂骨")) {   // 普攻附加 20% 攻击真伤，不触发裂帛
     damageEnemy(e, attackPower() * 0.2, { trueDmg: true, noPassives: true, channel: CH.DOT });
@@ -2420,8 +2417,18 @@ function castSlot(i) {
   if ((G.cd[id] || 0) > 0) return;
   if (castSeal(id)) {
     G.cd[id] = SEAL_BY_ID[id].cd;
-    if (G.niejingEvade) G.cd[id] = 0;      // 影大共鸣：蹑景规避成功 ⇒ CD 立即刷新（旗标仅蹑景写入，消费即清）
-    G.niejingEvade = false;
+    // 影大共鸣：蹑景 CD 直接砍到 1 秒（不判规避、不减大招 CD）
+    if (id === "影-生存-蹑景" && hasLargeRes("影")) G.cd[id] = 1;
+  }
+}
+
+function reduceActiveCd(amt) {                       // 影袭：只削减在槽主动刻印的剩余 CD（遗器与被动不受影响）
+  for (let i = 0; i < G.slots.length; i++) {
+    const sid = G.slots[i];
+    if (!sid) continue;
+    const s = SEAL_BY_ID[sid];
+    if (!s || s.type !== "active") continue;
+    if ((G.cd[sid] || 0) > 0) G.cd[sid] = Math.max(0, G.cd[sid] - amt);
   }
 }
 
@@ -2542,42 +2549,6 @@ function sealNiejing() {                             // 蹑景：冲刺 250px + 
   player.dashAng = ang;
   player.dashSpeed = 250 / 0.16;
   player.inv = Math.max(player.inv, 0.3);            // 0.3 秒无敌帧
-  // 影大共鸣：起跳瞬间快照判定「即将命中」⇒ 视为成功规避（拍板：不限频）——
-  // ①敌方弹幕在 100 内；②冲刺中敌人在 200 内；③旋转梁（激光）已压住玩家或 0.5s 内将扫到。
-  // 蹑景 CD 立即刷新（旗标由 castSlot 消费置 0）+ 遗器 CD −2 秒
-  if (hasLargeRes("影")) {
-    let evaded = false;
-    eBullets.each((b) => { if (!evaded && dist(b.x, b.y, player.x, player.y) <= 100) evaded = true; });
-    if (!evaded) enemies.each((t) => {
-      if (evaded || t.hp <= 0) return;
-      if (t.state === "dash") {                        // 冲刺中的敌人：拍板半径 200
-        if (dist(t.x, t.y, player.x, player.y) <= 200) evaded = true;
-        return;
-      }
-      if (t.beams && !t.cloaked) {                     // 激光：updateBeams 命中判定的角度版 + 角速度外推 0.5s
-        const dx = player.x - t.x, dy = player.y - t.y;
-        const d = dist(t.x, t.y, player.x, player.y);
-        let maxLen = 0;
-        for (const bm of t.beams) if (bm.len > maxLen) maxLen = bm.len;
-        if (d > maxLen) return;                        // 梁够不着，永远不会命中
-        const pa = Math.atan2(dy, dx);
-        for (const bm of t.beams) {
-          const pd = pa - bm.a;
-          const ad = Math.abs(Math.atan2(Math.sin(pd), Math.cos(pd)));
-          const hw = Math.atan2(bm.w + player.r, Math.max(d, 1));  // 梁半宽在玩家距离上的角半径
-          if (ad <= hw + Math.abs(bm.spin) * 0.5) { evaded = true; break; }
-        }
-      }
-    });
-    if (evaded) {
-      G.niejingEvade = true;
-      addFloat(player.x, player.y - player.r - 32, "规避成功", "#8ea2ff", 20);
-      if (G.relic && G.relicCd > 0) {
-        G.relicCd = Math.max(0, G.relicCd - 2);
-        addFloat(player.x, player.y - player.r - 32, "大招 CD -2s", "#ffd76a", 20);
-      }
-    }
-  }
   const e = allies.obtain();
   e.kind = "echo";
   e.x = ex; e.y = ey; e.r = 20; e.life = 3; e.t = 3; e.cd = 0.2; e.dmgPct = 0.5; e.follow = false;
@@ -2633,7 +2604,8 @@ function resolveBlock() {                            // 格挡成功：清弹幕
   enemies.each((e) => {
     const dx = e.x - player.x, dy = e.y - player.y;
     const d = Math.hypot(dx, dy);
-    if (d > 250) return;
+    // 震返：眩晕范围 250 → 350（只扩对敌人的判定；清弹幕范围是另一条 250，卡面未涉及，维持原值）
+    if (d > (hasSeal("垣-输出-震返") ? 350 : 250)) return;
     // 第 62 项 A：⑭无咎弹反成功 ⇒ 带"可被破防"标记的单位进入破防 3 秒（角兽与盾鳍卫没有该标记，正面读数逐字不变）
     if (e.def.guardBreak) e.armorBreak = Math.max(e.armorBreak, e.def.guardBreak);
     // 第 65 项 A：取消**当前这一手的前摇**、僵直 0.5 秒、CD 一律不动（起手帧已回填，见 `bossUseSkill`）。
@@ -2644,15 +2616,17 @@ function resolveBlock() {                            // 格挡成功：清弹幕
       e.state = e.def.tier === "mob" ? "chase" : "track";
       if (e.def.ai === "charger") e.dashCd = e.def.dashCd;
     }
-    const st = e.def.tier === "boss" ? 0.3 : 1.5;      // 精英由 applyStun 的 50% 递减得到 0.75
+    // BOSS 基础钳制 0.3 秒；持震岳 → 0.5 秒。精英由 applyStun 的 50% 递减得到 0.75
+    const st = e.def.tier === "boss" ? (hasSeal("垣-控制-震岳") ? 0.5 : 0.3) : 1.5;
     applyStun(e, windup ? Math.max(st, 0.5) : st);
     applyKnock(e, 0.8, dx, dy, true);                     // 第八章 1a：格挡成功 0.80（强击退源）
   });
-  // 第 71 项甲：弹反成功＝全场 100% 攻击**普通**伤害（擂台对角 917.9px ⇒ 不设距离上限）。
+  // 第 71 项甲：弹反成功＝全场攻击**普通**伤害（擂台对角 917.9px ⇒ 不设距离上限）；震返把 100% 抬到 180%。
   // 写法与 ⑰星回 引爆逐字同形 ⇒ 不冒充普攻（cc 恒 0，不掷暴击骰），被动钩子因 gate 按时间不按次、每类每场弹反最多 1 次。
+  const blockDmg = attackPower() * (hasSeal("垣-输出-震返") ? 1.8 : 1);
   enemies.each((e) => {
     if (e.charmed > 0) return;                                     // 被心渊魅惑的是友方，与玩家弹丸同口径
-    damageEnemy(e, attackPower(), { crit: true, channel: CH.DIRECT });   // crit 不带 basic ⇒ 弹反按"不冒充普攻"口径不判暴（读数不变）
+    damageEnemy(e, blockDmg, { crit: true, channel: CH.DIRECT });   // crit 不带 basic ⇒ 弹反按"不冒充普攻"口径不判暴（读数不变）
   });
   addFloat(player.x, player.y - player.r - 16, "弹反", "#e8e8e8", 26);
   if (hasLargeRes("垣")) {                               // 垣大共鸣：格挡成功返还 50% 无咎 CD + 立即重置不周冷却、刷新满盾
@@ -2740,7 +2714,7 @@ function updateAllies(wdt) {
           if (e.hp <= 0) return;
           if (dist(e.x, e.y, al.x, al.y) > 150) return;
           damageEnemy(e, attackPower() * 0.6 * resMul, { crit: true, basic: true, noPassives: true,
-            channel: CH.EXPL, sx: al.x, sy: al.y });   // 源是残影位置（不是玩家）：背后核心/背袭按爆炸源头判定，与殉爆（死者）/自毁爆裂（从者）同口径
+            channel: CH.EXPL, sx: al.x, sy: al.y });   // 源是残影位置（不是玩家）：背后核心按爆炸源头判定，与殉爆（死者）/自毁爆裂（从者）同口径
         });
         for (let i = 0; i < 12; i++) {
           const ang = rand(0, TAU), sp = rand(70, 260);
@@ -2761,6 +2735,18 @@ function updateAllies(wdt) {
       }
       clampInside(al, al.r);
     }
+    // 影链：玩家 ↔ 每道残影的连线（宽 44）—— 穿过的敌人减速 35% 并受持续伤害。
+    // 每目标独立 0.5s 限频 ⇒ 多道残影叠在同一目标身上只扩大覆盖面积，不叠伤害。
+    if (al.kind === "echo" && hasSeal("影-控制-影链")) {
+      enemies.each((e) => {
+        if (e.hp <= 0) return;
+        if (distSeg(e.x, e.y, player.x, player.y, al.x, al.y) > e.r + 22) return;
+        slowHard(e, 0.35, 0.3);
+        if (gatePerTarget(e.id, "影链", 0.5)) {
+          damageEnemy(e, attackPower() * 0.05, { trueDmg: true, noPassives: true, dot: true, channel: CH.DOT, label: "影链" });
+        }
+      });
+    }
     al.cd -= wdt;
     if (al.cd > 0) return;
     const range = al.kind === "turret" ? 520 : al.kind === "ranger" ? 620 : al.kind === "brute" ? 90 : 460;
@@ -2777,7 +2763,7 @@ function allyAttack(al, t, wdt) {
   const dmg = scaleAtk(CFG.player.atk) * al.dmgPct * (hasSeal(2) ? 1.4 : 1) * (hasSmallRes("枢") ? 1.20 : 1);   // 基准是玩家初始攻击（第六章⑥70%／⑩80%／⑦50%），武器不参与；枢小共鸣再 +20%
   if (al.kind === "brute") {                        // 近战 AOE：圈内全部目标
     enemies.each((e) => {
-      if (dist(e.x, e.y, al.x, al.y) < 110) damageEnemy(e, dmg, { ally: true, channel: CH.SUMMON });   // 召唤物直击不吃玩家暴击（附录 B1 口径统一）
+      if (dist(e.x, e.y, al.x, al.y) < 110) damageEnemy(e, dmg, { ally: true, channel: CH.SUMMON, sx: al.x, sy: al.y });   // 召唤物直击不吃玩家暴击（附录 B1 口径统一）；几何来源＝从者位置
     });
     for (let i = 0; i < 8; i++) {
       const a = rand(0, TAU);
@@ -2786,7 +2772,8 @@ function allyAttack(al, t, wdt) {
     return;
   }
   if (al.kind === "echo") {                          // 残影：复刻玩家弹道，去程即回收
-    damageEnemy(t, dmg, { ally: true, channel: CH.SUMMON });   // 残影直击：召唤物通道，不吃玩家暴击
+    damageEnemy(t, dmg, { ally: true, channel: CH.SUMMON, sx: al.x, sy: al.y });   // 残影直击：召唤物通道，不吃玩家暴击；几何来源＝残影位置
+    if (hasSeal("影-输出-影袭") && gate("影袭")) reduceActiveCd(0.4);   // 影袭：残影命中 ⇒ 在槽主动技 CD −0.4s（GATE 0.3s）
     spawnParticle(t.x, t.y, 0, 0, 0.2, 6, "#8ea2ff");
     return;
   }
@@ -2799,6 +2786,7 @@ function allyAttack(al, t, wdt) {
   b.vy = Math.sin(al.ang) * b.speed;
   b.r = 8; b.dmg = dmg; b.range = 700; b.traveled = 0;
   b.pierce = 0; b.hits = 0; b.ally = true; b.phase = "out"; b.big = false;
+  b.sx = al.x; b.sy = al.y;                               // 命中结算的几何来源＝从者位置（不是玩家）
   b.knock = 0;                                        // 召唤物不带击退（第八章 1a 表未收录）
   b.boomR = al.kind === "turret" ? TIANGONG_BOOM_R : 0;   // 第 50 项 B：只有炮台子弹带爆炸
   b.hited.length = 0;
@@ -3109,16 +3097,7 @@ function updateRelicFx(wdt) {
 
 /* ---------------- 敌人 AI ---------------- */
 
-function chaseTarget(e) {                            // 诱影：残影优先（仅 mob/elite；BOSS 不转移仇恨）
-  if (hasSeal("影-控制-诱影") && e.def.tier !== "boss") {
-    let best = null, bd = 300;
-    allies.each((al) => {
-      if (al.kind !== "echo") return;
-      const d = dist(e.x, e.y, al.x, al.y);
-      if (d < bd) { bd = d; best = al; }
-    });
-    if (best) return best;
-  }
+function chaseTarget(e) {                            // 敌人追击目标：默认玩家（影链不再提供仇恨转移）
   return player;
 }
 
@@ -4145,7 +4124,6 @@ function reset() {
   relicFx.length = 0;
   resetShrink();                              // 批次4b-4：环缩是关内状态，跨局必须归零
   G.relic = null; G.relicCd = 0; G.relicBossAcc = 0; G.relicRefund = 0; G.relicRefundT = 0;
-  G.niejingEvade = false;
   G.relicRefunded = false; G.relicChain = 0; G.relicCastAim = null;
   G.bossWave = false; G.afterBoss = false; G.pendingRelicPick = false; G.pendingSealPicks = 0;
   input.move.id = null; input.aim.id = null; input.aim.dragging = false;
@@ -4878,6 +4856,15 @@ function drawBullets() {
 function drawAllies() {
   allies.each((al) => {
     const fade = clamp(al.t / 0.6, 0, 1);
+    if (al.kind === "echo" && hasSeal("影-控制-影链")) {    // 影链：玩家 ↔ 残影的流动虚线
+      ctx.save();
+      ctx.globalAlpha = 0.28 * fade;
+      ctx.strokeStyle = "#8ea2ff";
+      ctx.lineWidth = 3;
+      ctx.setLineDash([10, 8]);
+      ctx.beginPath(); ctx.moveTo(player.x, player.y); ctx.lineTo(al.x, al.y); ctx.stroke();
+      ctx.restore();
+    }
     ctx.globalAlpha = al.kind === "echo" ? 0.45 * fade : fade;
     if (al.kind === "turret") {
       ctx.fillStyle = "#2a2f1f";
@@ -5694,7 +5681,7 @@ window.__game = {
   spawnSummon, splitOnDeath, originalAlive, clearSummons, pullToward, faceToward,   // 第 32~34 项口径要能在测试里直接驱动
   MAX_SUMMON_PER_OWNER, MAX_ACTIVE_TOTAL,
   sealChoices, weaponCd, attackPower, moveSpeed, scaleAtk, sealLv, activeSlots, hasSeal,
-  sealDef, normSealId, schoolCount, hasSmallRes, hasLargeRes, buzhouCap, dodgeChance, damageTakenMult, castSeal, gatePerTarget,   // moveSpeed 是批次4b-3 第 76 项才接出来的：吸的是两条乘区，测试面必须两条都能读
+  sealDef, normSealId, schoolCount, hasSmallRes, hasLargeRes, buzhouCap, dodgeChance, damageTakenMult, castSeal, gatePerTarget, reduceActiveCd,   // moveSpeed 是批次4b-3 第 76 项才接出来的：吸的是两条乘区，测试面必须两条都能读
   xpNeed, magnet, sweepOrbs,
   castRelic, startBossWave, startWave, leaveSafe, curLevel,   // 第 20 项：五关卡链要能直接驱动与读表
   clampInside, legalOverflow, legalDist, outsideArena, applyKnock, WEIGHT, FALL_DROP, FALL_ARM,
